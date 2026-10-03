@@ -1,0 +1,86 @@
+import { START, END } from './config.js';
+
+const pad = (n) => String(n).padStart(2, '0');
+
+export const toKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export const fromKey = (k) => {
+  const [y, m, d] = k.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+export const addDays = (key, n) => {
+  const d = fromKey(key);
+  d.setDate(d.getDate() + n);
+  return toKey(d);
+};
+export const todayKey = () => toKey(new Date());
+export const diffDays = (a, b) => Math.round((fromKey(a) - fromKey(b)) / 86400000);
+
+export const TOTAL_DAYS = diffDays(END, START) + 1;
+export const dayNumber = (key) => diffDays(key, START) + 1; // 1-based
+export const inChallenge = (key) => key >= START && key <= END;
+export const allDays = () => Array.from({ length: TOTAL_DAYS }, (_, i) => addDays(START, i));
+
+export const fmtDate = (key, opts = { weekday: 'short', day: 'numeric', month: 'short' }) =>
+  fromKey(key).toLocaleDateString('en-IN', opts);
+
+export const fmtClock = (ms) => {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+};
+export const fmtHM = (ms) => {
+  const m = Math.round(ms / 60000);
+  return `${Math.floor(m / 60)}h ${pad(m % 60)}m`;
+};
+export const fmtTime = (ts) =>
+  new Date(ts).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+export const minutesOfDay = (hhmm) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+};
+export const nowMinutes = (d = new Date()) => d.getHours() * 60 + d.getMinutes();
+
+export const uid = () => Math.random().toString(36).slice(2, 10);
+
+// ---- per-day data -------------------------------------------------------
+export const emptyDay = () => ({ checks: {}, plan: [], sessions: [], meals: [], notes: [], reflection: '' });
+
+export const workMs = (day, CATS, runningSession) => {
+  const sessions = runningSession ? [...day.sessions, runningSession] : day.sessions;
+  return sessions
+    .filter((s) => CATS.find((c) => c.id === s.cat)?.work)
+    .reduce((t, s) => t + (s.end - s.start), 0);
+};
+
+export const sumMeals = (day) =>
+  day.meals.reduce(
+    (t, m) => ({ kcal: t.kcal + (+m.kcal || 0), protein: t.protein + (+m.protein || 0) }),
+    { kcal: 0, protein: 0 },
+  );
+
+// A day is "won" only when every rule is true.
+export function dayResult(day, settings, CATS, RULES) {
+  if (!day) return { done: 0, won: false, checks: {} };
+  const checks = { ...day.checks };
+  checks.work = workMs(day, CATS) >= settings.workTargetHours * 3600000;
+  if (day.meals.some((m) => m.junk)) checks.junk = false; // a logged junk meal fails the rule, no override
+  if (!checks.gym) checks.gym = day.sessions.some((s) => s.cat === 'gym' && s.end - s.start >= 20 * 60000);
+  const done = RULES.filter((r) => checks[r.id]).length;
+  return { done, won: done === RULES.length, checks };
+}
+
+export function streaks(days, today, settings, CATS, RULES) {
+  let current = 0;
+  let best = 0;
+  let run = 0;
+  for (const k of allDays()) {
+    if (k > today) break;
+    const won = dayResult(days[k], settings, CATS, RULES).won;
+    if (won) { run += 1; best = Math.max(best, run); }
+    else if (k < today) run = 0; // today is still open, doesn't break the streak yet
+  }
+  current = run;
+  return { current, best };
+}
+
+export const isLocked = (date, today) => date !== today; // only today is editable; the past is history
