@@ -43,7 +43,7 @@ export const nowMinutes = (d = new Date()) => d.getHours() * 60 + d.getMinutes()
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
 // ---- per-day data -------------------------------------------------------
-export const emptyDay = () => ({ checks: {}, plan: [], sessions: [], meals: [], notes: [], reflection: '', habits: {}, water: 0, ratings: {}, mit: '', weight: '' });
+export const emptyDay = () => ({ checks: {}, plan: [], sessions: [], meals: [], notes: [], reflection: '', habits: {}, water: 0, ratings: {}, mit: '', weight: '', actuals: {} });
 export const planned = (day) => (day?.plan || []).filter((p) => p.title && p.title.trim());
 export const pad2 = (n) => String(n).padStart(2, '0');
 
@@ -86,3 +86,26 @@ export function streaks(days, today, settings, CATS, RULES) {
 }
 
 export const isLocked = (date, today) => date !== today; // only today is editable; the past is history
+
+// ---- hour-by-hour actuals ------------------------------------------------
+// Splits the day's sessions (plus the running one) into the part that falls inside a given hour.
+export function hourSegments(sessions, dateKey, hour) {
+  const base = fromKey(dateKey);
+  const hs = new Date(base.getFullYear(), base.getMonth(), base.getDate(), hour).getTime();
+  const he = hs + 3600000;
+  const out = [];
+  for (const s of sessions) {
+    const a = Math.max(s.start, hs);
+    const b = Math.min(s.end, he);
+    if (b > a) out.push({ id: s.id, label: s.label, cat: s.cat, ms: b - a, running: s.id === 'running' });
+  }
+  return out.sort((x, y) => (x.running ? 1 : 0) - (y.running ? 1 : 0));
+}
+export const hourStart = (dateKey, hour) => {
+  const b = fromKey(dateKey);
+  return new Date(b.getFullYear(), b.getMonth(), b.getDate(), hour).getTime();
+};
+export const fmtShort = (ms) => {
+  const m = Math.round(ms / 60000);
+  return m >= 60 ? `${Math.floor(m / 60)}h ${pad2(m % 60)}m` : `${m}m`;
+};

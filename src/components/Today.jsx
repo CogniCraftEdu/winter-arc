@@ -1,18 +1,9 @@
-import { CATS, HABITS, RATINGS, RULES, SCHEDULE, WATER_TARGET, hoursOfBlock } from '../config.js';
-import { fmtHM, minutesOfDay, nowMinutes, pad2, sumMeals, workMs } from '../lib.js';
+import { CATS, HABITS, RATINGS, RULES, WATER_TARGET } from '../config.js';
+import { fmtHM, sumMeals, workMs } from '../lib.js';
 import { quoteFor } from '../quotes.js';
-
-const fmtMin = (m) => `${pad2(Math.floor((m % 1440) / 60))}:${pad2(m % 60)}`;
-
-// Flatten the schedule: fixed blocks are one row, flexible blocks one row per hour.
-const ROWS = SCHEDULE.flatMap((b) =>
-  b.kind === 'flex'
-    ? hoursOfBlock(b).map((h) => ({ key: `${b.start}-${h}`, start: h * 60, end: h * 60 + 60, hour: h, flex: true }))
-    : [{ key: b.start, start: minutesOfDay(b.start), end: minutesOfDay(b.end), title: b.title }],
-);
+import Schedule from './Schedule.jsx';
 
 export default function Today({ actions, today, now, day, running, result, settings, dn }) {
-  const mins = nowMinutes(new Date(now));
   const worked = workMs(day, CATS, running);
   const target = settings.workTargetHours * 3600000;
   const meals = sumMeals(day);
@@ -89,29 +80,7 @@ export default function Today({ actions, today, now, day, running, result, setti
         </div>
       </div>
 
-      <section className="panel">
-        <h2>Schedule</h2>
-        <ol className="sched">
-          {ROWS.map((r) => {
-            const live = (mins >= r.start && mins < r.end) || (r.end > 1440 && mins < r.end - 1440);
-            const past = mins >= r.end && r.end <= 1440;
-            const item = r.flex ? day.plan.find((p) => p.hour === r.hour && p.title?.trim()) : null;
-            return (
-              <li key={r.key} className={`${live ? 'live' : ''} ${past ? 'past' : ''} ${r.flex ? 'flex' : ''}`}>
-                <span className="time">{r.flex ? `${pad2(r.hour)}:00` : `${fmtMin(r.start)}–${fmtMin(r.end)}`}</span>
-                {r.flex ? (
-                  item ? (
-                    <label className="task">
-                      <input type="checkbox" checked={item.done} onChange={() => actions.togglePlan(today, item.id)} />
-                      <span className={item.done ? 'struck' : ''}>{item.title}</span>
-                    </label>
-                  ) : <span className="warn">Unplanned</span>
-                ) : <b>{r.title}</b>}
-              </li>
-            );
-          })}
-        </ol>
-      </section>
+      <Schedule actions={actions} today={today} now={now} day={day} running={running} />
 
       <div className="cols">
         <section className="panel">

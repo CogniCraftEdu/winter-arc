@@ -65,6 +65,7 @@ export function useStore() {
       const keep = day.plan.filter((p) => !src.some((x) => x.hour === p.hour));
       return { ...s, days: { ...s.days, [to]: { ...day, plan: [...keep, ...src.map((p) => ({ ...p, id: uid(), done: false }))] } } };
     }),
+    setActual: (date, hour, text) => editDay(date, (d) => ({ ...d, actuals: { ...d.actuals, [hour]: text } })),
     toggleHabit: (date, id) => editDay(date, (d) => ({ ...d, habits: { ...d.habits, [id]: !d.habits?.[id] } })),
     setRating: (date, id, val) => editDay(date, (d) => ({ ...d, ratings: { ...d.ratings, [id]: d.ratings?.[id] === val ? 0 : val } })),
     addGoal: (text) => update((s) => ({ ...s, goals: [...s.goals, { id: uid(), text, done: false }] })),
