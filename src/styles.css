@@ -70,6 +70,7 @@ textarea { resize: vertical; }
 .warn { color: var(--warn); font-size: 13px; }
 .task { display: flex; align-items: center; gap: 8px; justify-content: space-between; padding: 3px 0; }
 .task label { display: flex; align-items: center; gap: 8px; }
+.sched .task { justify-content: flex-start; }
 .struck { text-decoration: line-through; color: var(--dim); }
 .slot { margin-top: 12px; }
 
@@ -100,6 +101,11 @@ input.inline { background: transparent; border: 0; padding: 2px 4px; flex: 1; fo
 .detail { margin-top: 14px; padding: 12px; background: #0f1630; border-radius: 10px; }
 
 @media (max-width: 520px) {
+  .tabs { gap: 2px; }
+  .log li { flex-wrap: wrap; row-gap: 0; }
+  .log li input.inline { flex-basis: 100%; order: 3; padding-left: 20px; }
+  .log li .x { margin-left: auto; }
+  .tabs button { min-width: 0; padding: 10px 4px; font-size: 13px; }
   .bigclock { font-size: 40px; }
   .grid { grid-template-columns: 1fr; }
   .sched li { flex-direction: column; gap: 2px; }
