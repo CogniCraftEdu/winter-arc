@@ -25,6 +25,23 @@ export default function Journey({ state, actions, today, settings }) {
     e.target.value = '';
   };
 
+  const weeks = Array.from({ length: Math.ceil(days.length / 7) }, (_, w) => {
+    const ks = days.slice(w * 7, w * 7 + 7);
+    const started = ks[0] <= today;
+    const done = ks.filter((k) => k < today);
+    const logged = ks.filter((k) => state.days[k]);
+    const kcalDays = logged.filter((k) => state.days[k].meals.length);
+    const weights = ks.map((k) => state.days[k]?.weight).filter((x) => x !== '' && x != null);
+    return {
+      w, ks, started,
+      won: done.filter((k) => results[k].won).length,
+      played: done.length,
+      work: ks.reduce((t, k) => t + (state.days[k] ? workMs(state.days[k], CATS) : 0), 0),
+      kcal: kcalDays.length ? Math.round(kcalDays.reduce((t, k) => t + sumMeals(state.days[k]).kcal, 0) / kcalDays.length) : null,
+      delta: weights.length > 1 ? +(weights[weights.length - 1] - weights[0]).toFixed(1) : null,
+    };
+  }).filter((x) => x.started);
+
   const sel = open && state.days[open];
   return (
     <div className="grid">
@@ -63,6 +80,23 @@ export default function Journey({ state, actions, today, settings }) {
             ) : <p className="dim">No data for this day.</p>}
           </div>
         )}
+      </section>
+
+      <section className="card wide">
+        <h2>Weekly review</h2>
+        {weeks.length === 0 && <p className="dim">Week 1 starts on {fmtDate(days[0])}.</p>}
+        {[...weeks].reverse().map((x) => (
+          <div key={x.w} className="detail" style={{ marginBottom: 10 }}>
+            <h3 style={{ marginTop: 0 }}>Week {x.w + 1} · {fmtDate(x.ks[0])} – {fmtDate(x.ks[x.ks.length - 1])}</h3>
+            <div className="cats">
+              <span className="tag">{x.won}/{x.played} days won</span>
+              <span className="tag">{fmtHM(x.work)} work</span>
+              {x.kcal != null && <span className="tag">{x.kcal} kcal avg</span>}
+              {x.delta != null && <span className="tag">{x.delta > 0 ? '+' : ''}{x.delta} kg</span>}
+            </div>
+            <textarea rows="3" placeholder="What worked? What broke? One fix for next week…" value={state.reviews[x.w] || ''} onChange={(e) => actions.setReview(x.w, e.target.value)} />
+          </div>
+        ))}
       </section>
 
       <section className="card">

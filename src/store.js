@@ -3,7 +3,7 @@ import { SETTINGS_DEFAULT } from './config.js';
 import { emptyDay, uid } from './lib.js';
 
 const KEY = 'winterarc:v1';
-const fresh = () => ({ days: {}, timer: null, settings: SETTINGS_DEFAULT, journal: [] });
+const fresh = () => ({ days: {}, timer: null, settings: SETTINGS_DEFAULT, reviews: {} });
 
 function load() {
   try {
@@ -43,6 +43,8 @@ export function useStore() {
     removeMeal: (date, id) => editDay(date, (d) => ({ ...d, meals: d.meals.filter((m) => m.id !== id) })),
     addNote: (date, note) => editDay(date, (d) => ({ ...d, notes: [{ id: uid(), ts: Date.now(), ...note }, ...d.notes] })),
     removeNote: (date, id) => editDay(date, (d) => ({ ...d, notes: d.notes.filter((n) => n.id !== id) })),
+    setField: (date, field, val) => editDay(date, (d) => ({ ...d, [field]: val })),
+    setReview: (week, text) => update((s) => ({ ...s, reviews: { ...s.reviews, [week]: text } })),
     setReflection: (date, text) => editDay(date, (d) => ({ ...d, reflection: text })),
     removeSession: (date, id) => editDay(date, (d) => ({ ...d, sessions: d.sessions.filter((x) => x.id !== id) })),
     renameSession: (date, id, label) => editDay(date, (d) => ({ ...d, sessions: d.sessions.map((x) => (x.id === id ? { ...x, label } : x)) })),

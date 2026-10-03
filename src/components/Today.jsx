@@ -12,6 +12,20 @@ export default function Today({ state, actions, today, now, day, running, result
 
   return (
     <div className="grid">
+      <section className="card wide">
+        <h2>The one thing today</h2>
+        <input
+          placeholder="If I do only one thing today, it is…"
+          value={day.mit || ''}
+          onChange={(e) => actions.setField(today, 'mit', e.target.value)}
+        />
+        <div className="row" style={{ marginTop: 10 }}>
+          <label className="field grow">Morning weight (kg)
+            <input type="number" step="0.1" min="0" value={day.weight ?? ''} onChange={(e) => actions.setField(today, 'weight', e.target.value === '' ? '' : +e.target.value)} />
+          </label>
+        </div>
+      </section>
+
       <section className="card">
         <h2>Non-negotiables <span className="dim">{result.done}/{RULES.length}</span></h2>
         <ul className="rules">
