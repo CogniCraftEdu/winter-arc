@@ -43,7 +43,9 @@ export const nowMinutes = (d = new Date()) => d.getHours() * 60 + d.getMinutes()
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
 // ---- per-day data -------------------------------------------------------
-export const emptyDay = () => ({ checks: {}, plan: [], sessions: [], meals: [], notes: [], reflection: '' });
+export const emptyDay = () => ({ checks: {}, plan: [], sessions: [], meals: [], notes: [], reflection: '', habits: {}, water: 0, ratings: {}, mit: '', weight: '' });
+export const planned = (day) => (day?.plan || []).filter((p) => p.title && p.title.trim());
+export const pad2 = (n) => String(n).padStart(2, '0');
 
 export const workMs = (day, CATS, runningSession) => {
   const sessions = runningSession ? [...day.sessions, runningSession] : day.sessions;

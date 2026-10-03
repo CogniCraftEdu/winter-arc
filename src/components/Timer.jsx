@@ -8,7 +8,7 @@ export default function Timer({ state, actions, today, now, day, running }) {
   const [cat, setCat] = useState('work');
   const sessions = [...day.sessions].sort((a, b) => b.start - a.start);
   const totals = CATS.map((c) => [c, sessions.filter((s) => s.cat === c.id).reduce((t, s) => t + (s.end - s.start), 0)]).filter(([, ms]) => ms > 0);
-  const openTasks = day.plan.filter((p) => !p.done);
+  const openTasks = day.plan.filter((p) => p.title?.trim() && !p.done).sort((a, b) => a.hour - b.hour);
 
   const start = (l = label, c = cat) => {
     actions.startTimer(l, c);

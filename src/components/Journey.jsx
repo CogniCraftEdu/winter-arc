@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { CATS, RULES, SETTINGS_DEFAULT } from '../config.js';
+import { CATS, HABITS, RULES, SETTINGS_DEFAULT } from '../config.js';
 import { allDays, dayNumber, dayResult, fmtDate, fmtHM, streaks, workMs, sumMeals } from '../lib.js';
 
 export default function Journey({ state, actions, today, settings }) {
@@ -38,6 +38,11 @@ export default function Journey({ state, actions, today, settings }) {
       played: done.length,
       work: ks.reduce((t, k) => t + (state.days[k] ? workMs(state.days[k], CATS) : 0), 0),
       kcal: kcalDays.length ? Math.round(kcalDays.reduce((t, k) => t + sumMeals(state.days[k]).kcal, 0) / kcalDays.length) : null,
+      rate: ['energy', 'mood', 'focus'].map((id) => {
+        const v = ks.map((k) => state.days[k]?.ratings?.[id]).filter(Boolean);
+        return v.length ? [id, (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1)] : null;
+      }).filter(Boolean),
+      habits: ks.reduce((t, k) => t + HABITS.filter((h) => state.days[k]?.habits?.[h.id]).length, 0),
       delta: weights.length > 1 ? +(weights[weights.length - 1] - weights[0]).toFixed(1) : null,
     };
   }).filter((x) => x.started);
@@ -92,11 +97,33 @@ export default function Journey({ state, actions, today, settings }) {
               <span className="tag">{x.won}/{x.played} days won</span>
               <span className="tag">{fmtHM(x.work)} work</span>
               {x.kcal != null && <span className="tag">{x.kcal} kcal avg</span>}
+              {x.habits > 0 && <span className="tag">{x.habits} habit ticks</span>}
+              {x.rate.map(([id, v]) => <span key={id} className="tag">{id} {v}</span>)}
               {x.delta != null && <span className="tag">{x.delta > 0 ? '+' : ''}{x.delta} kg</span>}
             </div>
             <textarea rows="3" placeholder="What worked? What broke? One fix for next week…" value={state.reviews[x.w] || ''} onChange={(e) => actions.setReview(x.w, e.target.value)} />
           </div>
         ))}
+      </section>
+
+      <section className="card wide">
+        <h2>Arc goals <span className="count">{state.goals.filter((g) => g.done).length}/{state.goals.length}</span></h2>
+        <p className="dim">What must be true on 18 December? Keep it to a few measurable outcomes.</p>
+        <ul className="rules compact">
+          {state.goals.map((g) => (
+            <li key={g.id} className={g.done ? 'ok' : ''}>
+              <label>
+                <input type="checkbox" checked={g.done} onChange={() => actions.toggleGoal(g.id)} />
+                <span className="rl"><b>{g.text}</b></span>
+                <button type="button" className="x" aria-label="Remove goal" onClick={(e) => { e.preventDefault(); actions.removeGoal(g.id); }}>×</button>
+              </label>
+            </li>
+          ))}
+        </ul>
+        <form className="row" style={{ marginTop: 12 }} onSubmit={(e) => { e.preventDefault(); const t = e.target.goal.value.trim(); if (t) { actions.addGoal(t); e.target.reset(); } }}>
+          <input name="goal" placeholder="e.g. Reach 74 kg · Ship 2 projects · 100k followers" />
+          <button className="btn primary">Add</button>
+        </form>
       </section>
 
       <section className="card">

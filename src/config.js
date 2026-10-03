@@ -43,3 +43,28 @@ export const CATS = [
   { id: 'other', label: 'Other', color: '#64748b' },
 ];
 export const catOf = (id) => CATS.find((c) => c.id === id) || CATS[CATS.length - 1];
+
+// Optional habits: not part of the win condition, but tracked for a fuller picture.
+export const HABITS = [
+  { id: 'sun', label: 'Morning sunlight', hint: '10 min outside' },
+  { id: 'walk', label: 'Walk / steps', hint: '8k+ steps' },
+  { id: 'read', label: 'Read', hint: '20 pages' },
+  { id: 'breath', label: 'Meditate / breathwork', hint: '10 min' },
+  { id: 'mobility', label: 'Mobility', hint: '10 min stretch' },
+  { id: 'phone', label: 'Phone out of bedroom', hint: 'Charge it elsewhere' },
+  { id: 'social', label: 'No scrolling before noon', hint: 'Feeds stay closed' },
+  { id: 'skill', label: 'Deliberate skill practice', hint: '1 focused hour' },
+];
+export const WATER_TARGET = 12; // glasses of ~250 ml
+export const RATINGS = [
+  { id: 'energy', label: 'Energy' },
+  { id: 'mood', label: 'Mood' },
+  { id: 'focus', label: 'Focus' },
+];
+
+export const hoursOfBlock = (b) => {
+  const s = Number(b.start.slice(0, 2));
+  const e = Number(b.end.slice(0, 2));
+  return Array.from({ length: e - s }, (_, i) => s + i);
+};
+export const FLEX_HOURS = SCHEDULE.filter((b) => b.kind === 'flex').flatMap(hoursOfBlock);
