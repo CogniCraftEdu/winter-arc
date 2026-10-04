@@ -29,9 +29,11 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 400 15px/1.5 
 .brand { display: flex; justify-content: space-between; }
 .eyebrow { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 500; color: var(--muted); }
 .eyebrow.dim { color: var(--faint); }
-.hero-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-top: 14px; }
-h1 { margin: 0; font: 300 clamp(34px, 6vw, 52px)/1 var(--sans); letter-spacing: -0.035em; }
-h1 .unit { font-size: .42em; color: var(--muted); letter-spacing: 0; margin-left: 6px; font-weight: 400; }
+.hero-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-top: 22px; }
+h1.headline { margin: 18px 0 0; font: 600 clamp(30px, 6.4vw, 56px)/1.02 var(--sans); letter-spacing: -0.04em; }
+.tagline { margin: 8px 0 0; color: var(--muted); font-size: 14px; letter-spacing: .01em; }
+.daycount { font: 300 clamp(26px, 4.4vw, 36px)/1 var(--sans); letter-spacing: -0.03em; }
+.daycount .unit { font-size: .5em; color: var(--muted); letter-spacing: 0; margin-left: 6px; font-weight: 400; }
 .mini { display: flex; gap: 22px; margin: 0; }
 .mini div { text-align: right; }
 .mini dt { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
@@ -196,6 +198,7 @@ input.inline { background: transparent !important; border: 0 !important; padding
   .hero-row { align-items: flex-end; }
   .mini { gap: 14px; } .mini dd { font-size: 17px; }
   /* bottom tab bar, app-style */
+  main { margin-top: 26px; }
   .tabs { position: fixed; left: 0; right: 0; bottom: 0; top: auto; margin: 0; border: 0; border-top: 1px solid var(--line); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 92%, transparent); gap: 0; z-index: 30; }
   .tabs button { flex: 1; flex-direction: column; gap: 3px; padding: 6px 0; font-size: 10.5px; border: 0; margin: 0; border-radius: 10px; }
   .tabs button.on { background: var(--raised); }

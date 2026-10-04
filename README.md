@@ -1,4 +1,4 @@
-# Winter Arc
+# Winter Arc · 75 Days Hard Challenge
 
 75-day discipline tracker: 5 Oct → 18 Dec 2026. React + Vite, no backend; data lives in the browser (localStorage).
 

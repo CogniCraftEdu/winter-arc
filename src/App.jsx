@@ -28,7 +28,7 @@ export default function App() {
 
   // Running timer shows in the browser tab title.
   useEffect(() => {
-    document.title = timer ? `⏱ ${fmtClock(now - timer.startedAt)} · ${timer.label}` : 'Winter Arc';
+    document.title = timer ? `⏱ ${fmtClock(now - timer.startedAt)} · ${timer.label}` : `Winter Arc · ${TOTAL_DAYS} Days Hard Challenge`;
   }, [timer, now]);
 
   const day = { ...emptyDay(), ...(days[today] || {}) };
@@ -49,12 +49,14 @@ export default function App() {
           <span className="eyebrow">Winter Arc</span>
           <span className="eyebrow dim">{fmtDate(START, { day: 'numeric', month: 'short' })} – {fmtDate(END, { day: 'numeric', month: 'short' })}</span>
         </div>
+        <h1 className="headline">{TOTAL_DAYS} Days Hard Challenge</h1>
+        <p className="tagline">No excuses. 100% execution.</p>
         <div className="hero-row">
-          <h1>
+          <div className="daycount">
             {before && <>Starts in {diffDays(START, today)}<span className="unit"> day{diffDays(START, today) === 1 ? '' : 's'}</span></>}
             {inChallenge(today) && <>Day {dn}<span className="unit"> of {TOTAL_DAYS}</span></>}
             {after && <>Complete</>}
-          </h1>
+          </div>
           <dl className="mini">
             <div><dt>Streak</dt><dd>{current}</dd></div>
             <div><dt>Best</dt><dd>{best}</dd></div>
