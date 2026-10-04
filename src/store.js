@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { SETTINGS_DEFAULT } from './config.js';
+import { SETTINGS_DEFAULT, TEMPLATE } from './config.js';
 import { emptyDay, uid } from './lib.js';
 
 const KEY = 'winterarc:v1';
@@ -54,13 +54,18 @@ export function useStore() {
 
   const actions = {
     setCheck: (date, id, val) => editDay(date, (d) => ({ ...d, checks: { ...d.checks, [id]: val } })),
+    toggleHour: (date, hour) => editDay(date, (d) => {
+      const ex = d.plan.find((p) => p.hour === hour);
+      if (ex) return { ...d, plan: d.plan.map((p) => (p === ex ? { ...p, done: !p.done } : p)) };
+      return { ...d, plan: [...d.plan, { id: uid(), hour, title: TEMPLATE[hour]?.title || '', cat: TEMPLATE[hour]?.cat || 'work', done: true }] };
+    }),
     setSlot: (date, hour, patch) => editDay(date, (d) => {
       const ex = d.plan.find((p) => p.hour === hour);
       if (ex) return { ...d, plan: d.plan.map((p) => (p === ex ? { ...p, ...patch } : p)) };
-      return { ...d, plan: [...d.plan, { id: uid(), hour, title: '', cat: 'work', done: false, ...patch }] };
+      return { ...d, plan: [...d.plan, { id: uid(), hour, title: TEMPLATE[hour]?.title || '', cat: TEMPLATE[hour]?.cat || 'work', done: false, ...patch }] };
     }),
     copyPlan: (from, to) => update((s) => {
-      const src = (s.days[from]?.plan || []).filter((p) => p.title.trim());
+      const src = s.days[from]?.plan || [];
       const day = s.days[to] || emptyDay();
       const keep = day.plan.filter((p) => !src.some((x) => x.hour === p.hour));
       return { ...s, days: { ...s.days, [to]: { ...day, plan: [...keep, ...src.map((p) => ({ ...p, id: uid(), done: false }))] } } };

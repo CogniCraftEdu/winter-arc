@@ -150,11 +150,13 @@ input[type=checkbox]:disabled { opacity: .5; cursor: not-allowed; }
 /* ---------- hourly planner ---------- */
 .plan-meta { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0 2px; }
 .hours { list-style: none; margin: 14px 0 0; padding: 0; }
-.hr { display: grid; grid-template-columns: 56px 100px minmax(0, 1fr) 24px; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.hr { display: grid; grid-template-columns: 56px minmax(0, 1fr) 24px; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); }
 .hr .time { min-width: 0; }
-.hr.locked { grid-template-columns: 56px 1fr; padding: 9px 0; }
-.hr.locked .lock { color: var(--faint); font-size: 13.5px; }
-.hr select, .hr input:not([type=checkbox]) { padding: 8px 10px; font-size: 14px; }
+.hr.sleep { grid-template-columns: 56px 1fr; padding: 14px 0 4px; border-bottom: 0; }
+.hr .lock { color: var(--muted); font-size: 14px; }
+input.is-default { color: var(--muted); }
+input.is-default:focus { color: var(--text); }
+.hr input:not([type=checkbox]) { padding: 8px 10px; font-size: 14px; }
 
 /* ---------- timer ---------- */
 .bigclock { font: 300 clamp(48px, 10vw, 76px)/1 var(--sans); letter-spacing: -0.04em; text-align: center; margin: 14px 0; font-variant-numeric: tabular-nums; }
@@ -209,10 +211,8 @@ input.inline { background: transparent !important; border: 0 !important; padding
   .stats { grid-template-columns: repeat(2, 1fr); }
   .sched li { gap: 12px; padding-left: 10px; }
   .time { min-width: 84px; }
-  .hr { grid-template-columns: 44px minmax(0, 1fr) 22px; grid-template-areas: 'time inp chk' '. sel .'; row-gap: 6px; }
-  .hr .time { grid-area: time; } .hr select { grid-area: sel; width: 110px; } .hr input:not([type=checkbox]) { grid-area: inp; } .hr input[type=checkbox] { grid-area: chk; }
-  .hr.locked { grid-template-columns: 44px 1fr; grid-template-areas: 'time lock'; }
-  .hr.locked .lock { grid-area: lock; }
+  .hr { grid-template-columns: 44px minmax(0, 1fr) 22px; }
+  .hr.sleep { grid-template-columns: 44px 1fr; }
   .log li { flex-wrap: wrap; row-gap: 0; }
   .log li input.inline { flex-basis: 100%; order: 3; padding-left: 20px !important; }
   .log li .x { margin-left: auto; }

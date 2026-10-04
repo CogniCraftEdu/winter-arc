@@ -1,4 +1,4 @@
-import { START, END } from './config.js';
+import { START, END, HOURS, TEMPLATE } from './config.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -103,3 +103,20 @@ export const fmtShort = (ms) => {
   const m = Math.round(ms / 60000);
   return m >= 60 ? `${Math.floor(m / 60)}h ${pad2(m % 60)}m` : `${m}m`;
 };
+
+// Effective plan for a day: what you typed wins (even if you cleared it); otherwise the suggested default.
+export function planFor(day) {
+  const stored = new Map((day?.plan || []).filter((p) => p.hour != null).map((p) => [p.hour, p]));
+  return HOURS.map((hour) => {
+    const p = stored.get(hour);
+    const t = TEMPLATE[hour];
+    return {
+      hour,
+      id: p?.id,
+      title: p ? p.title : t?.title || '',
+      done: !!p?.done,
+      cat: p?.cat || t?.cat || 'work',
+      isDefault: !p && !!t,
+    };
+  });
+}

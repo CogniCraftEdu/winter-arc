@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CATS, catOf } from '../config.js';
-import { fmtClock, fmtHM, fmtTime, workMs } from '../lib.js';
+import { fmtClock, fmtHM, fmtTime, pad2, planFor, workMs } from '../lib.js';
 
 export default function Stopwatch({ state, actions, today, now, day, running, settings }) {
   const timer = state.timer;
@@ -9,7 +9,8 @@ export default function Stopwatch({ state, actions, today, now, day, running, se
   const sessions = [...day.sessions].sort((a, b) => b.start - a.start);
   const worked = workMs(day, CATS, running);
   const target = settings.workTargetHours * 3600000;
-  const openTasks = day.plan.filter((p) => p.title?.trim() && !p.done).sort((a, b) => a.hour - b.hour);
+  const hourNow = new Date(now).getHours();
+  const openTasks = planFor(day).filter((p) => p.title.trim() && !p.done && p.hour >= hourNow).slice(0, 4);
   const totals = CATS.map((c) => [c, [...sessions, ...(running ? [running] : [])].filter((s) => s.cat === c.id).reduce((t, s) => t + (s.end - s.start), 0)]).filter(([, ms]) => ms > 0);
 
   const start = (l = label, c = cat) => { actions.startTimer(l, c); setLabel(''); };
@@ -42,9 +43,9 @@ export default function Stopwatch({ state, actions, today, now, day, running, se
 
       {openTasks.length > 0 && (
         <>
-          <h3>From today's plan</h3>
+          <h3>Up next in your plan</h3>
           <div className="pills">
-            {openTasks.map((p) => <button key={p.id} className="pill" onClick={() => start(p.title, p.cat || 'work')}>▶ {p.title}</button>)}
+            {openTasks.map((p) => <button key={p.hour} className="pill" onClick={() => start(p.title, p.cat)}>{pad2(p.hour)}:00 · {p.title}</button>)}
           </div>
         </>
       )}

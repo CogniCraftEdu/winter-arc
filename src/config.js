@@ -17,18 +17,20 @@ export const RULES = [
   { id: 'gym', label: 'Gym or run', hint: '6:30–8:30 AM. Counted if you log a Gym session or tick it.' },
 ];
 
-// Fixed blocks. kind=flex means "planned the night before".
-export const SCHEDULE = [
-  { start: '06:00', end: '06:30', title: 'Brush, freshen up, get ready', kind: 'fixed' },
-  { start: '06:30', end: '08:30', title: 'GYM', kind: 'fixed', cat: 'gym' },
-  { start: '08:30', end: '09:00', title: 'Bath', kind: 'fixed' },
-  { start: '09:00', end: '13:00', title: 'Flexible block 1', kind: 'flex', slot: 'am' },
-  { start: '13:00', end: '14:00', title: 'Lunch — meal + protein', kind: 'fixed', cat: 'meal' },
-  { start: '14:00', end: '21:00', title: 'Flexible block 2', kind: 'flex', slot: 'pm' },
-  { start: '21:00', end: '22:00', title: 'Protein dinner · family time · documentary', kind: 'fixed', cat: 'meal' },
-  { start: '22:00', end: '23:00', title: "Plan tomorrow + post today's vlog", kind: 'fixed', cat: 'vlog' },
-  { start: '23:00', end: '30:00', title: 'Sleep (11 → 6)', kind: 'fixed', cat: 'sleep' },
-];
+// Every waking hour is a plannable slot. These are only the suggested defaults:
+// type over any of them, or clear a slot to leave it unplanned.
+export const FIRST_HOUR = 6;
+export const LAST_HOUR = 22; // 22:00–23:00 is the last waking slot
+export const SLEEP = { from: '23:00', to: '06:00', label: 'Sleep' }; // one long block
+export const TEMPLATE = {
+  6: { title: 'Brush, freshen up, get ready', cat: 'other' },
+  7: { title: 'Gym', cat: 'gym' },
+  8: { title: 'Gym → bath', cat: 'gym' },
+  13: { title: 'Lunch: meal + protein', cat: 'meal' },
+  21: { title: 'Protein dinner + family + documentary', cat: 'meal' },
+  22: { title: 'Plan tomorrow + post the vlog', cat: 'vlog' },
+};
+export const HOURS = Array.from({ length: LAST_HOUR - FIRST_HOUR + 1 }, (_, i) => FIRST_HOUR + i);
 
 // Stopwatch categories. `work: true` counts toward the 10-hour target.
 export const CATS = [
@@ -60,9 +62,3 @@ export const RATINGS = [
   { id: 'focus', label: 'Focus' },
 ];
 
-export const hoursOfBlock = (b) => {
-  const s = Number(b.start.slice(0, 2));
-  const e = Number(b.end.slice(0, 2));
-  return Array.from({ length: e - s }, (_, i) => s + i);
-};
-export const FLEX_HOURS = SCHEDULE.filter((b) => b.kind === 'flex').flatMap(hoursOfBlock);
