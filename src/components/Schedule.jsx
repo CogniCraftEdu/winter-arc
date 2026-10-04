@@ -1,15 +1,15 @@
-import { CATS, SLEEP, SLOT_MIN } from '../config.js';
+import { CATS, SLEEP } from '../config.js';
 import { fmtShort, planFor, slotMs, slotRange, slotSegments } from '../lib.js';
 
 const catColor = (id) => CATS.find((c) => c.id === id)?.color || '#64748b';
-const SLOT_MS = SLOT_MIN * 60000;
 
 export default function Schedule({ actions, today, now, day, running }) {
   const sessions = [...day.sessions, ...(running ? [running] : [])];
 
   const rows = planFor(day).map((slot) => {
     const started = slotMs(today, slot.start) <= now;
-    const ended = slotMs(today, slot.start + SLOT_MIN) <= now;
+    const ended = slotMs(today, slot.end) <= now;
+    const SLOT_MS = (slot.end - slot.start) * 60000;
     const live = started && !ended;
     const segs = started ? slotSegments(sessions, today, slot.start) : [];
     const logged = segs.reduce((t, s) => t + s.ms, 0);
@@ -26,7 +26,7 @@ export default function Schedule({ actions, today, now, day, running }) {
       else if (logged >= 5 * 60000) status = 'partial';
       else status = 'miss';
     }
-    return { ...slot, started, ended, live, segs, logged, accounted, status, planned, note };
+    return { ...slot, slotMs: SLOT_MS, started, ended, live, segs, logged, accounted, status, planned, note };
   });
 
   const plannedRows = rows.filter((r) => r.planned && r.started);
@@ -35,7 +35,7 @@ export default function Schedule({ actions, today, now, day, running }) {
   const pct = settled.length ? Math.round((settled.filter((r) => r.status === 'hit').length / settled.length) * 100) : null;
   const endedRows = rows.filter((r) => r.ended);
   const loggedMs = rows.reduce((t, r) => t + r.logged, 0);
-  const unaccounted = endedRows.length * SLOT_MS - endedRows.reduce((t, r) => t + r.accounted, 0);
+  const unaccounted = endedRows.reduce((t, r) => t + r.slotMs - r.accounted, 0);
 
   return (
     <section className="panel">
@@ -51,7 +51,7 @@ export default function Schedule({ actions, today, now, day, running }) {
       <div className="sg">
         <div className="sg-head"><span /><span>Expected</span><span>Actual</span><span /></div>
         {rows.map((r) => (
-          <div key={r.start} className={`sg-row ${r.live ? 'live' : ''} ${r.ended ? 'past' : ''} ${r.status || ''} ${r.start % 60 === 0 ? 'on-hour' : ''}`}>
+          <div key={r.start} className={`sg-row ${r.live ? 'live' : ''} ${r.ended ? 'past' : ''} ${r.status || ''}`}>
             <span className="time">{slotRange(r.start)}</span>
 
             <div className="exp">

@@ -1,4 +1,4 @@
-import { START, END, SLOTS, SLOT_MIN, TEMPLATE } from './config.js';
+import { START, END, SLOTS, SLOT_END, TEMPLATE } from './config.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -83,7 +83,7 @@ export const isLocked = (date, today) => date !== today; // only today is editab
 
 // ---- slot-by-slot actuals ------------------------------------------------
 export const hhmm = (min) => `${pad2(Math.floor(min / 60))}:${pad2(min % 60)}`;
-export const slotRange = (start) => `${hhmm(start)}–${hhmm(start + SLOT_MIN)}`;
+export const slotRange = (start) => `${hhmm(start)}–${hhmm(SLOT_END[start])}`;
 export const slotMs = (dateKey, startMin) => {
   const b = fromKey(dateKey);
   return new Date(b.getFullYear(), b.getMonth(), b.getDate(), 0, startMin).getTime();
@@ -91,7 +91,7 @@ export const slotMs = (dateKey, startMin) => {
 // Splits the day's sessions (plus the running one) into the part that falls inside one slot.
 export function slotSegments(sessions, dateKey, startMin) {
   const hs = slotMs(dateKey, startMin);
-  const he = hs + SLOT_MIN * 60000;
+  const he = slotMs(dateKey, SLOT_END[startMin]);
   const out = [];
   for (const s of sessions) {
     const a = Math.max(s.start, hs);
@@ -108,11 +108,12 @@ export const fmtShort = (ms) => {
 // Effective plan for a day: what you typed wins (even if you cleared it); otherwise the suggested default.
 export function planFor(day) {
   const stored = new Map((day?.plan || []).filter((p) => p.start != null).map((p) => [p.start, p]));
-  return SLOTS.map((start) => {
+  return SLOTS.map(({ start, end }) => {
     const p = stored.get(start);
     const t = TEMPLATE[start];
     return {
       start,
+      end,
       id: p?.id,
       title: p ? p.title : t?.title || '',
       done: !!p?.done,

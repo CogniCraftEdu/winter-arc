@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { SETTINGS_DEFAULT, TEMPLATE } from './config.js';
+import { SETTINGS_DEFAULT, SLOTS, TEMPLATE } from './config.js';
 import { emptyDay, uid } from './lib.js';
 
 const KEY = 'winterarc:v1';
 const fresh = () => ({ days: {}, timer: null, settings: SETTINGS_DEFAULT, reviews: {}, goals: [] });
 
-// Older versions planned two big blocks (slot am/pm), then whole hours. The planner now uses
-// 30-minute slots keyed by `start` (minutes since midnight); convert anything older.
+// Older versions planned two big blocks (slot am/pm), then whole hours, then 30-minute slots.
+// The planner now uses the SLOTS layout keyed by `start` (minutes since midnight); convert anything older.
+const slotOf = (min) => SLOTS.find((s) => min >= s.start && min < s.end)?.start;
 function migrate(state) {
   const days = {};
   for (const [k, d] of Object.entries(state.days || {})) {
@@ -33,7 +34,20 @@ function migrate(state) {
       const n = Number(key);
       if (n < 100) { actuals[n * 60] = text; actuals[n * 60 + 30] = text; } else actuals[n] = text;
     }
-    days[k] = { ...d, plan, actuals };
+    // Fit onto the current slot layout: exact matches win, others fall into the slot containing them.
+    const fitted = new Map();
+    for (const p of plan) if (SLOTS.some((s) => s.start === p.start)) fitted.set(p.start, p);
+    for (const p of plan) {
+      const target = slotOf(p.start);
+      if (target != null && !fitted.has(target)) fitted.set(target, { ...p, start: target });
+    }
+    const fittedActuals = {};
+    for (const [key, text] of Object.entries(actuals)) if (SLOTS.some((s) => s.start === +key)) fittedActuals[key] = text;
+    for (const [key, text] of Object.entries(actuals)) {
+      const target = slotOf(+key);
+      if (target != null && fittedActuals[target] == null) fittedActuals[target] = text;
+    }
+    days[k] = { ...d, plan: [...fitted.values()], actuals: fittedActuals };
   }
   return { ...state, days };
 }

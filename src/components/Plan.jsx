@@ -14,7 +14,7 @@ export default function Plan({ state, actions, today, tomorrow }) {
   return (
     <div className="stack-lg">
       <section className="panel">
-        <h2>Plan the day, 30 minutes at a time</h2>
+        <h2>Plan the day, slot by slot</h2>
         <div className="seg">
           <button className={date === tomorrow ? 'on' : ''} onClick={() => setDate(tomorrow)}>Tomorrow · {fmtDate(tomorrow)}</button>
           <button className={date === today ? 'on' : ''} onClick={() => setDate(today)}>Today · {fmtDate(today)}</button>
@@ -27,7 +27,7 @@ export default function Plan({ state, actions, today, tomorrow }) {
 
         <ol className="hours">
           {slots.map((s) => (
-            <li key={s.start} className={`hr ${s.start % 60 === 0 ? 'on-hour' : ''}`}>
+            <li key={s.start} className="hr">
               <span className="time">{slotRange(s.start)}</span>
               <input
                 className={s.isDefault ? 'is-default' : ''}

@@ -14,7 +14,7 @@ export default function Stopwatch({ state, actions, today, now, day, running, se
   // Next few distinct things in the plan (consecutive slots with the same title collapse into one).
   const openTasks = [];
   for (const p of planFor(day)) {
-    if (p.start + 30 <= minNow || !p.title.trim() || p.done) continue;
+    if (p.end <= minNow || !p.title.trim() || p.done) continue;
     if (openTasks.some((o) => o.title === p.title)) continue;
     openTasks.push(p);
     if (openTasks.length === 4) break;

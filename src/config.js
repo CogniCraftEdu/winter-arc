@@ -17,25 +17,28 @@ export const RULES = [
   { id: 'gym', label: 'Gym or run', hint: '6:30–8:30 AM. Counted if you log a Gym session or tick it.' },
 ];
 
-// The day is planned in 30-minute slots from 06:00 to 23:00. A slot is identified by its
-// start in minutes since midnight (06:30 = 390). The defaults below are only suggestions:
+// The waking day (06:00-23:00) is planned in slots. A slot is identified by its start in
+// minutes since midnight (06:30 = 390). The morning routine has its own block sizes; from
+// 09:00 onward the day is split into 1-hour slots. Titles below are only suggestions:
 // type over any of them, or clear a slot to leave it unplanned.
-export const SLOT_MIN = 30;
-export const FIRST_MIN = 6 * 60;
-export const END_MIN = 23 * 60; // sleep starts here
-export const SLEEP = { from: '23:00', to: '06:00', label: 'Sleep' }; // one long block
-const range = (from, to) => Array.from({ length: (to - from) / SLOT_MIN }, (_, i) => from + i * SLOT_MIN);
-const fill = (from, to, v) => Object.fromEntries(range(from, to).map((m) => [m, v]));
 const t = (h, m = 0) => h * 60 + m;
+const hourly = (from, to) => Array.from({ length: to - from }, (_, i) => ({ start: t(from + i), end: t(from + i + 1) }));
+export const SLOTS = [
+  { start: t(6), end: t(6, 30) },   // brush, freshen up, face wash
+  { start: t(6, 30), end: t(8, 30) }, // gym
+  { start: t(8, 30), end: t(9) },   // bath
+  ...hourly(9, 23),                 // 09:00-23:00, one hour each
+];
+export const SLOT_END = Object.fromEntries(SLOTS.map((s) => [s.start, s.end]));
+export const SLEEP = { from: '23:00', to: '06:00', label: 'Sleep' }; // one long block
 export const TEMPLATE = {
-  ...fill(t(6), t(6, 30), { title: 'Brush, freshen up, get ready', cat: 'other' }),
-  ...fill(t(6, 30), t(8, 30), { title: 'Gym', cat: 'gym' }),
-  ...fill(t(8, 30), t(9), { title: 'Bath', cat: 'other' }),
-  ...fill(t(13), t(14), { title: 'Lunch: meal + protein', cat: 'meal' }),
-  ...fill(t(21), t(22), { title: 'Protein dinner + family + documentary', cat: 'meal' }),
-  ...fill(t(22), t(23), { title: 'Plan tomorrow + post the vlog', cat: 'vlog' }),
+  [t(6)]: { title: 'Brush + freshen up + face wash', cat: 'other' },
+  [t(6, 30)]: { title: 'Gym', cat: 'gym' },
+  [t(8, 30)]: { title: 'Bath + get ready', cat: 'other' },
+  [t(13)]: { title: 'Lunch: meal + protein', cat: 'meal' },
+  [t(21)]: { title: 'Protein dinner + family + documentary', cat: 'meal' },
+  [t(22)]: { title: 'Plan tomorrow + post the vlog', cat: 'vlog' },
 };
-export const SLOTS = range(FIRST_MIN, END_MIN);
 
 // Stopwatch categories. `work: true` counts toward the 10-hour target.
 export const CATS = [
