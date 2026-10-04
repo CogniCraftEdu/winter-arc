@@ -43,7 +43,7 @@ export const nowMinutes = (d = new Date()) => d.getHours() * 60 + d.getMinutes()
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
 // ---- per-day data -------------------------------------------------------
-export const emptyDay = () => ({ checks: {}, plan: [], sessions: [], meals: [], notes: [], reflection: '', habits: {}, water: 0, ratings: {}, mit: '', weight: '', actuals: {} });
+export const emptyDay = () => ({ checks: {}, plan: [], sessions: [], notes: [], reflection: '', habits: {}, water: 0, ratings: {}, mit: '', weight: '', actuals: {} });
 export const planned = (day) => (day?.plan || []).filter((p) => p.title && p.title.trim());
 export const pad2 = (n) => String(n).padStart(2, '0');
 
@@ -54,18 +54,12 @@ export const workMs = (day, CATS, runningSession) => {
     .reduce((t, s) => t + (s.end - s.start), 0);
 };
 
-export const sumMeals = (day) =>
-  day.meals.reduce(
-    (t, m) => ({ kcal: t.kcal + (+m.kcal || 0), protein: t.protein + (+m.protein || 0) }),
-    { kcal: 0, protein: 0 },
-  );
 
 // A day is "won" only when every rule is true.
 export function dayResult(day, settings, CATS, RULES) {
   if (!day) return { done: 0, won: false, checks: {} };
   const checks = { ...day.checks };
   checks.work = workMs(day, CATS) >= settings.workTargetHours * 3600000;
-  if (day.meals.some((m) => m.junk)) checks.junk = false; // a logged junk meal fails the rule, no override
   if (!checks.gym) checks.gym = day.sessions.some((s) => s.cat === 'gym' && s.end - s.start >= 20 * 60000);
   const done = RULES.filter((r) => checks[r.id]).length;
   return { done, won: done === RULES.length, checks };

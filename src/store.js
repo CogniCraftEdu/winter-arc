@@ -72,8 +72,6 @@ export function useStore() {
     toggleGoal: (id) => update((s) => ({ ...s, goals: s.goals.map((g) => (g.id === id ? { ...g, done: !g.done } : g)) })),
     removeGoal: (id) => update((s) => ({ ...s, goals: s.goals.filter((g) => g.id !== id) })),
     togglePlan: (date, id) => editDay(date, (d) => ({ ...d, plan: d.plan.map((p) => (p.id === id ? { ...p, done: !p.done } : p)) })),
-    addMeal: (date, meal) => editDay(date, (d) => ({ ...d, meals: [...d.meals, { id: uid(), ts: Date.now(), ...meal }] })),
-    removeMeal: (date, id) => editDay(date, (d) => ({ ...d, meals: d.meals.filter((m) => m.id !== id) })),
     addNote: (date, note) => editDay(date, (d) => ({ ...d, notes: [{ id: uid(), ts: Date.now(), ...note }, ...d.notes] })),
     removeNote: (date, id) => editDay(date, (d) => ({ ...d, notes: d.notes.filter((n) => n.id !== id) })),
     setField: (date, field, val) => editDay(date, (d) => ({ ...d, [field]: val })),

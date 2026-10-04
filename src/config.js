@@ -1,18 +1,16 @@
 // Challenge definition — edit here, nowhere else.
-export const START = '2026-10-04';
+export const START = '2026-10-05';
 export const END = '2026-12-18';
 
 export const SETTINGS_DEFAULT = {
   workTargetHours: 10,
   sleepTargetHours: 7,
-  calorieTarget: 2200,
-  proteinTarget: 140,
 };
 
 // The six rules. `auto` ones are derived from data and cannot be ticked by hand.
 export const RULES = [
   { id: 'brahma', label: 'Brahmacharya', hint: 'No exceptions.' },
-  { id: 'junk', label: 'No junk food', hint: 'Log every meal. Stay inside the calorie target.' },
+  { id: 'junk', label: 'No junk food', hint: 'Eat clean all day. No exceptions.' },
   { id: 'sleep', label: '7 hours sleep', hint: '11 PM → 6 AM.' },
   { id: 'vlog', label: 'Daily vlog posted', hint: 'Posted between 10 and 11 PM.' },
   { id: 'work', label: '10 hours of work', hint: 'Counted automatically from the stopwatch.', auto: true },

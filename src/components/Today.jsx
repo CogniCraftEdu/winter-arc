@@ -1,14 +1,12 @@
 import { CATS, HABITS, RATINGS, RULES, WATER_TARGET } from '../config.js';
-import { fmtHM, sumMeals, workMs } from '../lib.js';
+import { fmtHM, workMs } from '../lib.js';
+
 import { quoteFor } from '../quotes.js';
 import Schedule from './Schedule.jsx';
+import Stopwatch from './Stopwatch.jsx';
+import NotesPanel from './NotesPanel.jsx';
 
-export default function Today({ actions, today, now, day, running, result, settings, dn }) {
-  const worked = workMs(day, CATS, running);
-  const target = settings.workTargetHours * 3600000;
-  const meals = sumMeals(day);
-  const hasJunk = day.meals.some((m) => m.junk);
-  const overKcal = meals.kcal > settings.calorieTarget;
+export default function Today({ state, actions, today, now, day, running, result, settings, dn }) {
   const [quote, author] = quoteFor(dn, today);
   const habitsDone = HABITS.filter((h) => day.habits?.[h.id]).length;
 
@@ -30,23 +28,20 @@ export default function Today({ actions, today, now, day, running, result, setti
       </section>
 
       <div className="cols">
+        <Stopwatch state={state} actions={actions} today={today} now={now} day={day} running={running} settings={settings} />
         <section className="panel">
           <h2>Non-negotiables <span className="count">{result.done}/{RULES.length}</span></h2>
           <ul className="rules">
             {RULES.map((r) => {
               const on = !!result.checks[r.id];
-              const locked = r.auto || (r.id === 'junk' && hasJunk);
+              const locked = r.auto;
               return (
                 <li key={r.id} className={on ? 'ok' : ''}>
                   <label>
                     <input type="checkbox" checked={on} disabled={locked} onChange={(e) => actions.setCheck(today, r.id, e.target.checked)} />
                     <span className="rl">
                       <b>{r.label}</b>
-                      <small className={r.id === 'junk' && (hasJunk || overKcal) ? 'bad' : ''}>
-                        {r.id === 'work' && `${fmtHM(worked)} of ${settings.workTargetHours}h`}
-                        {r.id === 'junk' && (hasJunk ? 'Junk meal logged. Rule broken today.' : overKcal ? `Over calorie target (${meals.kcal}/${settings.calorieTarget})` : r.hint)}
-                        {r.id !== 'work' && r.id !== 'junk' && r.hint}
-                      </small>
+                      <small>{r.id === 'work' ? `${fmtHM(workMs(day, CATS, running))} of ${settings.workTargetHours}h` : r.hint}</small>
                     </span>
                   </label>
                 </li>
@@ -55,32 +50,11 @@ export default function Today({ actions, today, now, day, running, result, setti
           </ul>
           {result.won && <div className="win">Day won. Plan tomorrow.</div>}
         </section>
-
-        <div className="stack-lg">
-          <section className="panel">
-            <h2>Work</h2>
-            <div className="stat"><b>{fmtHM(worked)}</b><span>of {settings.workTargetHours}h</span></div>
-            <div className="bar"><i style={{ width: `${Math.min(100, (worked / target) * 100)}%` }} /></div>
-            <div className="cats">
-              {CATS.map((c) => {
-                const ms = [...day.sessions, ...(running ? [running] : [])].filter((s) => s.cat === c.id).reduce((t, s) => t + (s.end - s.start), 0);
-                return ms > 0 && <span key={c.id} className="tag"><i style={{ background: c.color }} />{c.label} {fmtHM(ms)}</span>;
-              })}
-            </div>
-          </section>
-
-          <section className="panel">
-            <h2>Water <span className="count">{day.water || 0}/{WATER_TARGET}</span></h2>
-            <div className="glasses">
-              {Array.from({ length: WATER_TARGET }, (_, i) => (
-                <button key={i} aria-label={`${i + 1} glasses`} className={i < (day.water || 0) ? 'on' : ''} onClick={() => actions.setField(today, 'water', (day.water || 0) === i + 1 ? i : i + 1)} />
-              ))}
-            </div>
-          </section>
-        </div>
       </div>
 
       <Schedule actions={actions} today={today} now={now} day={day} running={running} />
+
+      <NotesPanel state={state} actions={actions} today={today} day={day} />
 
       <div className="cols">
         <section className="panel">
@@ -97,7 +71,17 @@ export default function Today({ actions, today, now, day, running, result, setti
           </ul>
         </section>
 
-        <section className="panel">
+        <div className="stack-lg">
+          <section className="panel">
+            <h2>Water <span className="count">{day.water || 0}/{WATER_TARGET}</span></h2>
+            <div className="glasses">
+              {Array.from({ length: WATER_TARGET }, (_, i) => (
+                <button key={i} aria-label={`${i + 1} glasses`} className={i < (day.water || 0) ? 'on' : ''} onClick={() => actions.setField(today, 'water', (day.water || 0) === i + 1 ? i : i + 1)} />
+              ))}
+            </div>
+          </section>
+
+          <section className="panel">
           <h2>Evening check-in</h2>
           {RATINGS.map((r) => (
             <div key={r.id} className="rating">
@@ -110,7 +94,8 @@ export default function Today({ actions, today, now, day, running, result, setti
           <label className="field" style={{ marginTop: 18 }}>Morning weight (kg)
             <input type="number" step="0.1" min="0" value={day.weight ?? ''} onChange={(e) => actions.setField(today, 'weight', e.target.value === '' ? '' : +e.target.value)} />
           </label>
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   );

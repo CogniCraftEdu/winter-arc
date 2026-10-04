@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { CATS, HABITS, RULES, SETTINGS_DEFAULT } from '../config.js';
-import { allDays, dayNumber, dayResult, fmtDate, fmtHM, streaks, workMs, sumMeals } from '../lib.js';
+import { allDays, dayNumber, dayResult, fmtDate, fmtHM, streaks, workMs } from '../lib.js';
 
 export default function Journey({ state, actions, today, settings }) {
   const [open, setOpen] = useState(null);
@@ -29,15 +29,12 @@ export default function Journey({ state, actions, today, settings }) {
     const ks = days.slice(w * 7, w * 7 + 7);
     const started = ks[0] <= today;
     const done = ks.filter((k) => k < today);
-    const logged = ks.filter((k) => state.days[k]);
-    const kcalDays = logged.filter((k) => state.days[k].meals.length);
     const weights = ks.map((k) => state.days[k]?.weight).filter((x) => x !== '' && x != null);
     return {
       w, ks, started,
       won: done.filter((k) => results[k].won).length,
       played: done.length,
       work: ks.reduce((t, k) => t + (state.days[k] ? workMs(state.days[k], CATS) : 0), 0),
-      kcal: kcalDays.length ? Math.round(kcalDays.reduce((t, k) => t + sumMeals(state.days[k]).kcal, 0) / kcalDays.length) : null,
       rate: ['energy', 'mood', 'focus'].map((id) => {
         const v = ks.map((k) => state.days[k]?.ratings?.[id]).filter(Boolean);
         return v.length ? [id, (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1)] : null;
@@ -78,7 +75,7 @@ export default function Journey({ state, actions, today, settings }) {
             </ul>
             {sel ? (
               <>
-                <p className="dim">Work {fmtHM(workMs(sel, CATS))} · {sumMeals(sel).kcal} kcal · {sumMeals(sel).protein}g protein · {sel.sessions.length} sessions</p>
+                <p className="dim">Work {fmtHM(workMs(sel, CATS))} · {sel.sessions.length} sessions</p>
                 {sel.notes.map((n) => <p key={n.id} className="note">• {n.text}</p>)}
                 {sel.reflection && <p className="note reflect">🌙 {sel.reflection}</p>}
               </>
@@ -96,7 +93,6 @@ export default function Journey({ state, actions, today, settings }) {
             <div className="cats">
               <span className="tag">{x.won}/{x.played} days won</span>
               <span className="tag">{fmtHM(x.work)} work</span>
-              {x.kcal != null && <span className="tag">{x.kcal} kcal avg</span>}
               {x.habits > 0 && <span className="tag">{x.habits} habit ticks</span>}
               {x.rate.map(([id, v]) => <span key={id} className="tag">{id} {v}</span>)}
               {x.delta != null && <span className="tag">{x.delta > 0 ? '+' : ''}{x.delta} kg</span>}
@@ -129,7 +125,7 @@ export default function Journey({ state, actions, today, settings }) {
       <section className="card">
         <h2>Targets</h2>
         <div className="stack">
-          {[['workTargetHours', 'Work hours / day'], ['calorieTarget', 'Calorie limit'], ['proteinTarget', 'Protein target (g)']].map(([key, label]) => (
+          {[['workTargetHours', 'Work hours / day']].map(([key, label]) => (
             <label key={key} className="field">{label}
               <input type="number" min="1" value={settings[key]} onChange={(e) => actions.setSettings({ [key]: +e.target.value || SETTINGS_DEFAULT[key] })} />
             </label>

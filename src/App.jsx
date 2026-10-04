@@ -7,24 +7,18 @@ import {
 } from './lib.js';
 import Icon from './components/Icon.jsx';
 import Today from './components/Today.jsx';
-import Timer from './components/Timer.jsx';
 import Plan from './components/Plan.jsx';
-import Food from './components/Food.jsx';
-import Notes from './components/Notes.jsx';
 import Journey from './components/Journey.jsx';
 
 const TABS = [
   ['today', 'Today'],
-  ['timer', 'Timer'],
   ['plan', 'Plan'],
-  ['food', 'Food'],
-  ['notes', 'Notes'],
   ['journey', 'Journey'],
 ];
 
 export default function App() {
   const [state, actions] = useStore();
-  const [tab, setTab] = useState(() => { try { return localStorage.getItem('winterarc:tab') || 'today'; } catch { return 'today'; } });
+  const [tab, setTab] = useState(() => { try { const t = localStorage.getItem('winterarc:tab'); return TABS.some(([id]) => id === t) ? t : 'today'; } catch { return 'today'; } });
   const now = useNow();
   const today = todayKey();
   const { settings, timer, days } = state;
@@ -70,8 +64,8 @@ export default function App() {
         <div className="progress" aria-hidden="true"><i style={{ width: `${progress}%` }} /></div>
       </header>
 
-      {running && (
-        <button className="timerbar" onClick={() => setTab('timer')}>
+      {running && tab !== 'today' && (
+        <button className="timerbar" onClick={() => setTab('today')}>
           <span className="pulse" />
           <span className="tl">{running.label}</span>
           <span className="mono">{fmtClock(now - timer.startedAt)}</span>
@@ -89,10 +83,7 @@ export default function App() {
 
       <main>
         {tab === 'today' && <Today {...ctx} />}
-        {tab === 'timer' && <Timer {...ctx} />}
         {tab === 'plan' && <Plan {...ctx} tomorrow={addDays(today, 1)} />}
-        {tab === 'food' && <Food {...ctx} />}
-        {tab === 'notes' && <Notes {...ctx} />}
         {tab === 'journey' && <Journey {...ctx} />}
       </main>
     </div>

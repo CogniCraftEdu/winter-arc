@@ -1,6 +1,5 @@
-// One quote per challenge day (76). Attributed only where the source is well established.
-export const QUOTES = [
-  ['Well begun is half done.'],
+// One quote per challenge day (75). Attributed only where the source is well established.
+const GENERAL = [
   ['We are what we repeatedly do. Excellence, then, is not an act, but a habit.', 'Will Durant'],
   ['Discipline equals freedom.', 'Jocko Willink'],
   ['What stands in the way becomes the way.', 'Marcus Aurelius'],
@@ -30,7 +29,6 @@ export const QUOTES = [
   ['Your habits are voting for the person you become.', 'James Clear'],
   ['Strength is built in the reps nobody watches.'],
   ['Stop waiting to feel ready. Start.'],
-  ['Halfway is where most people quit. Stay.'],
   ['Protect your sleep, your focus and your word.'],
   ['Every rep, every page, every hour: it adds up.'],
   ['Win the morning, win the day.'],
@@ -61,24 +59,38 @@ export const QUOTES = [
   ['The work you avoid is usually the work that matters.'],
   ['Show up when it\'s dull. That\'s where it\'s decided.'],
   ['Great things are done by a series of small things brought together.'],
-  ['The last 20 days are why you started.'],
   ['Mood is optional. Execution isn\'t.'],
   ['You are building proof that your word means something.'],
   ['Keep the promise. Keep the streak. Keep going.'],
-  ['Finish strong. Strong finishes are remembered.'],
-  ['A few more weeks of discipline for a lifetime of options.'],
-  ['The old you is watching. Don\'t go back.'],
-  ['Ten more days. Make them your best ten.'],
-  ['Don\'t coast to the line. Sprint through it.'],
   ['You said you would. Now do.'],
-  ['The arc ends. The man you became doesn\'t.'],
-  ['Last day. Win it like the first.'],
-  ['You finished. Now raise the standard.'],
+  ['Sweat now, shine later.'],
+  ['Your only competition is who you were yesterday.'],
+  ['Consistency is the quiet superpower.'],
+  ['Do it tired. Do it bored. Do it anyway.'],
+  ['Great lives are built in unglamorous hours.'],
+  ['Hold the line.'],
 ];
 
+// Quotes tied to a specific point in the 75-day arc.
+const PINNED = {
+  1: ['Well begun is half done.'],
+  38: ['Halfway is where most people quit. Stay.'],
+  45: ['The old you is watching. Don\'t go back.'],
+  55: ['The last 20 days are why you started.'],
+  60: ['A few more weeks of discipline for a lifetime of options.'],
+  65: ['Ten more days. Make them your best ten.'],
+  70: ['Don\'t coast to the line. Sprint through it.'],
+  74: ['Finish strong. Strong finishes are remembered.'],
+  75: ['Last day. Win it like the first.'],
+};
+
 export function quoteFor(dayNo, key) {
-  const i = dayNo >= 1 && dayNo <= QUOTES.length
-    ? dayNo - 1
-    : Math.abs([...key].reduce((h, c) => h * 31 + c.charCodeAt(0), 7)) % QUOTES.length;
-  return QUOTES[i];
+  if (PINNED[dayNo]) return PINNED[dayNo];
+  if (dayNo >= 1 && dayNo <= 75) {
+    // Skip the pinned days so the general pool is used without repeats.
+    const idx = dayNo - 1 - Object.keys(PINNED).filter((d) => +d < dayNo).length;
+    return GENERAL[idx % GENERAL.length];
+  }
+  const h = Math.abs([...key].reduce((a, c) => a * 31 + c.charCodeAt(0), 7));
+  return GENERAL[h % GENERAL.length];
 }

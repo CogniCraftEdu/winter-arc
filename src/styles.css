@@ -254,3 +254,15 @@ input.note-in:focus { border-bottom: 1px solid var(--text); background: transpar
   .sg-row > .time { grid-area: time; } .sg-row > .exp { grid-area: exp; } .sg-row > .act { grid-area: act; } .sg-row > .verdict, .sg-row > span:last-child { grid-area: v; }
   .exp::before { content: none; }
 }
+
+/* ---------- stopwatch / folds ---------- */
+.bigclock.idle { color: var(--faint); }
+.center { text-align: center; }
+.center-row { justify-content: center; margin: 4px 0 8px; }
+.fold { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
+.fold summary { cursor: pointer; font-size: 11.5px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); list-style: none; display: flex; justify-content: space-between; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary .count { letter-spacing: .04em; text-transform: none; color: var(--faint); font-weight: 400; font-size: 13px; }
+.fold summary::after { content: '+'; margin-left: 8px; color: var(--faint); }
+.fold[open] summary::after { content: '–'; }
+.fold .log { margin-top: 8px; }
