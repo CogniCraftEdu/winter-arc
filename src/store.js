@@ -5,20 +5,35 @@ import { emptyDay, uid } from './lib.js';
 const KEY = 'winterarc:v1';
 const fresh = () => ({ days: {}, timer: null, settings: SETTINGS_DEFAULT, reviews: {}, goals: [] });
 
-// Early versions planned two big blocks (slot am/pm); the planner is now hourly.
+// Older versions planned two big blocks (slot am/pm), then whole hours. The planner now uses
+// 30-minute slots keyed by `start` (minutes since midnight); convert anything older.
 function migrate(state) {
   const days = {};
   for (const [k, d] of Object.entries(state.days || {})) {
-    const used = new Set((d.plan || []).filter((p) => p.hour != null).map((p) => p.hour));
-    const plan = (d.plan || []).map((p) => {
-      if (p.hour != null) return p;
-      const pool = p.slot === 'pm' ? [14, 15, 16, 17, 18, 19, 20] : [9, 10, 11, 12];
-      const hour = pool.find((h) => !used.has(h));
-      if (hour == null) return null;
-      used.add(hour);
-      return { ...p, hour };
-    }).filter(Boolean);
-    days[k] = { ...d, plan };
+    const hourUsed = new Set((d.plan || []).filter((p) => p.hour != null).map((p) => p.hour));
+    const used = new Set((d.plan || []).filter((p) => p.start != null).map((p) => p.start));
+    const plan = [];
+    for (const p of d.plan || []) {
+      if (p.start != null) { plan.push(p); continue; }
+      let hour = p.hour;
+      if (hour == null) {
+        const pool = p.slot === 'pm' ? [14, 15, 16, 17, 18, 19, 20] : [9, 10, 11, 12];
+        hour = pool.find((h) => !hourUsed.has(h));
+        if (hour == null) continue;
+        hourUsed.add(hour);
+      }
+      for (const start of [hour * 60, hour * 60 + 30]) {
+        if (used.has(start)) continue;
+        used.add(start);
+        plan.push({ ...p, id: start === hour * 60 ? p.id : uid(), start, hour: undefined, slot: undefined });
+      }
+    }
+    const actuals = {};
+    for (const [key, text] of Object.entries(d.actuals || {})) {
+      const n = Number(key);
+      if (n < 100) { actuals[n * 60] = text; actuals[n * 60 + 30] = text; } else actuals[n] = text;
+    }
+    days[k] = { ...d, plan, actuals };
   }
   return { ...state, days };
 }
@@ -54,23 +69,23 @@ export function useStore() {
 
   const actions = {
     setCheck: (date, id, val) => editDay(date, (d) => ({ ...d, checks: { ...d.checks, [id]: val } })),
-    toggleHour: (date, hour) => editDay(date, (d) => {
-      const ex = d.plan.find((p) => p.hour === hour);
+    toggleSlot: (date, start) => editDay(date, (d) => {
+      const ex = d.plan.find((p) => p.start === start);
       if (ex) return { ...d, plan: d.plan.map((p) => (p === ex ? { ...p, done: !p.done } : p)) };
-      return { ...d, plan: [...d.plan, { id: uid(), hour, title: TEMPLATE[hour]?.title || '', cat: TEMPLATE[hour]?.cat || 'work', done: true }] };
+      return { ...d, plan: [...d.plan, { id: uid(), start, title: TEMPLATE[start]?.title || '', cat: TEMPLATE[start]?.cat || 'work', done: true }] };
     }),
-    setSlot: (date, hour, patch) => editDay(date, (d) => {
-      const ex = d.plan.find((p) => p.hour === hour);
+    setSlot: (date, start, patch) => editDay(date, (d) => {
+      const ex = d.plan.find((p) => p.start === start);
       if (ex) return { ...d, plan: d.plan.map((p) => (p === ex ? { ...p, ...patch } : p)) };
-      return { ...d, plan: [...d.plan, { id: uid(), hour, title: TEMPLATE[hour]?.title || '', cat: TEMPLATE[hour]?.cat || 'work', done: false, ...patch }] };
+      return { ...d, plan: [...d.plan, { id: uid(), start, title: TEMPLATE[start]?.title || '', cat: TEMPLATE[start]?.cat || 'work', done: false, ...patch }] };
     }),
     copyPlan: (from, to) => update((s) => {
       const src = s.days[from]?.plan || [];
       const day = s.days[to] || emptyDay();
-      const keep = day.plan.filter((p) => !src.some((x) => x.hour === p.hour));
+      const keep = day.plan.filter((p) => !src.some((x) => x.start === p.start));
       return { ...s, days: { ...s.days, [to]: { ...day, plan: [...keep, ...src.map((p) => ({ ...p, id: uid(), done: false }))] } } };
     }),
-    setActual: (date, hour, text) => editDay(date, (d) => ({ ...d, actuals: { ...d.actuals, [hour]: text } })),
+    setActual: (date, start, text) => editDay(date, (d) => ({ ...d, actuals: { ...d.actuals, [start]: text } })),
     toggleHabit: (date, id) => editDay(date, (d) => ({ ...d, habits: { ...d.habits, [id]: !d.habits?.[id] } })),
     setRating: (date, id, val) => editDay(date, (d) => ({ ...d, ratings: { ...d.ratings, [id]: d.ratings?.[id] === val ? 0 : val } })),
     addGoal: (text) => update((s) => ({ ...s, goals: [...s.goals, { id: uid(), text, done: false }] })),

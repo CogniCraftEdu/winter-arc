@@ -1,30 +1,29 @@
-import { CATS, SLEEP } from '../config.js';
-import { fmtShort, hourSegments, hourStart, pad2, planFor } from '../lib.js';
+import { CATS, SLEEP, SLOT_MIN } from '../config.js';
+import { fmtShort, planFor, slotMs, slotRange, slotSegments } from '../lib.js';
 
 const catColor = (id) => CATS.find((c) => c.id === id)?.color || '#64748b';
-const HOUR = 3600000;
+const SLOT_MS = SLOT_MIN * 60000;
 
 export default function Schedule({ actions, today, now, day, running }) {
   const sessions = [...day.sessions, ...(running ? [running] : [])];
 
   const rows = planFor(day).map((slot) => {
-    const h = slot.hour;
-    const started = hourStart(today, h) <= now;
-    const ended = hourStart(today, h + 1) <= now;
+    const started = slotMs(today, slot.start) <= now;
+    const ended = slotMs(today, slot.start + SLOT_MIN) <= now;
     const live = started && !ended;
-    const segs = started ? hourSegments(sessions, today, h) : [];
+    const segs = started ? slotSegments(sessions, today, slot.start) : [];
     const logged = segs.reduce((t, s) => t + s.ms, 0);
-    const note = day.actuals?.[h]?.trim();
+    const note = day.actuals?.[slot.start]?.trim();
     const planned = !!slot.title.trim();
 
-    // A ticked hour or a written note also counts as accounted for.
-    const accounted = Math.min(HOUR, Math.max(logged, slot.done || note ? HOUR : 0));
+    // A ticked slot or a written note also counts as accounted for.
+    const accounted = Math.min(SLOT_MS, Math.max(logged, slot.done || note ? SLOT_MS : 0));
 
     let status = null;
     if (planned && started) {
-      if (slot.done || logged >= 45 * 60000) status = 'hit';
+      if (slot.done || logged >= SLOT_MS * 0.75) status = 'hit';
       else if (live) status = 'live';
-      else if (logged >= 10 * 60000) status = 'partial';
+      else if (logged >= 5 * 60000) status = 'partial';
       else status = 'miss';
     }
     return { ...slot, started, ended, live, segs, logged, accounted, status, planned, note };
@@ -36,7 +35,7 @@ export default function Schedule({ actions, today, now, day, running }) {
   const pct = settled.length ? Math.round((settled.filter((r) => r.status === 'hit').length / settled.length) * 100) : null;
   const endedRows = rows.filter((r) => r.ended);
   const loggedMs = rows.reduce((t, r) => t + r.logged, 0);
-  const unaccounted = endedRows.length * HOUR - endedRows.reduce((t, r) => t + r.accounted, 0);
+  const unaccounted = endedRows.length * SLOT_MS - endedRows.reduce((t, r) => t + r.accounted, 0);
 
   return (
     <section className="panel">
@@ -44,7 +43,7 @@ export default function Schedule({ actions, today, now, day, running }) {
 
       <div className="sumstrip">
         <div><b>{pct == null ? '—' : `${pct}%`}</b><span>plan adherence</span></div>
-        <div><b>{hits}/{plannedRows.length}</b><span>planned hours hit</span></div>
+        <div><b>{hits}/{plannedRows.length}</b><span>planned slots hit</span></div>
         <div><b>{fmtShort(loggedMs)}</b><span>logged today</span></div>
         <div className={unaccounted > 30 * 60000 ? 'bad' : ''}><b>{endedRows.length ? fmtShort(unaccounted) : '—'}</b><span>unaccounted</span></div>
       </div>
@@ -52,13 +51,13 @@ export default function Schedule({ actions, today, now, day, running }) {
       <div className="sg">
         <div className="sg-head"><span /><span>Expected</span><span>Actual</span><span /></div>
         {rows.map((r) => (
-          <div key={r.hour} className={`sg-row ${r.live ? 'live' : ''} ${r.ended ? 'past' : ''} ${r.status || ''}`}>
-            <span className="time">{pad2(r.hour)}:00</span>
+          <div key={r.start} className={`sg-row ${r.live ? 'live' : ''} ${r.ended ? 'past' : ''} ${r.status || ''} ${r.start % 60 === 0 ? 'on-hour' : ''}`}>
+            <span className="time">{slotRange(r.start)}</span>
 
             <div className="exp">
               {r.planned ? (
                 <label className="task">
-                  <input type="checkbox" checked={r.done} onChange={() => actions.toggleHour(today, r.hour)} />
+                  <input type="checkbox" checked={r.done} onChange={() => actions.toggleSlot(today, r.start)} />
                   <span className={r.done ? 'struck' : ''}>{r.title}</span>
                 </label>
               ) : (
@@ -82,9 +81,9 @@ export default function Schedule({ actions, today, now, day, running }) {
                 <input
                   className="note-in"
                   placeholder="note…"
-                  aria-label={`What did you do at ${pad2(r.hour)}:00`}
-                  value={day.actuals?.[r.hour] || ''}
-                  onChange={(e) => actions.setActual(today, r.hour, e.target.value)}
+                  aria-label={`What did you do ${slotRange(r.start)}`}
+                  value={day.actuals?.[r.start] || ''}
+                  onChange={(e) => actions.setActual(today, r.start, e.target.value)}
                 />
               )}
             </div>
@@ -98,8 +97,8 @@ export default function Schedule({ actions, today, now, day, running }) {
           </div>
         ))}
         <div className="sg-row sleep">
-          <span className="time">{SLEEP.from}</span>
-          <div className="exp"><span className="fixedtxt">{SLEEP.label} · {SLEEP.from} → {SLEEP.to}</span></div>
+          <span className="time">{SLEEP.from}–{SLEEP.to}</span>
+          <div className="exp"><span className="fixedtxt">{SLEEP.label} · 7 hours</span></div>
           <div className="act"><span className="dim small">{day.checks?.sleep ? 'Sleep rule ticked ✓' : 'Tick “7 hours sleep” tomorrow morning'}</span></div>
           <span />
         </div>

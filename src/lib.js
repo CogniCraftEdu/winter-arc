@@ -1,4 +1,4 @@
-import { START, END, HOURS, TEMPLATE } from './config.js';
+import { START, END, SLOTS, SLOT_MIN, TEMPLATE } from './config.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -81,12 +81,17 @@ export function streaks(days, today, settings, CATS, RULES) {
 
 export const isLocked = (date, today) => date !== today; // only today is editable; the past is history
 
-// ---- hour-by-hour actuals ------------------------------------------------
-// Splits the day's sessions (plus the running one) into the part that falls inside a given hour.
-export function hourSegments(sessions, dateKey, hour) {
-  const base = fromKey(dateKey);
-  const hs = new Date(base.getFullYear(), base.getMonth(), base.getDate(), hour).getTime();
-  const he = hs + 3600000;
+// ---- slot-by-slot actuals ------------------------------------------------
+export const hhmm = (min) => `${pad2(Math.floor(min / 60))}:${pad2(min % 60)}`;
+export const slotRange = (start) => `${hhmm(start)}–${hhmm(start + SLOT_MIN)}`;
+export const slotMs = (dateKey, startMin) => {
+  const b = fromKey(dateKey);
+  return new Date(b.getFullYear(), b.getMonth(), b.getDate(), 0, startMin).getTime();
+};
+// Splits the day's sessions (plus the running one) into the part that falls inside one slot.
+export function slotSegments(sessions, dateKey, startMin) {
+  const hs = slotMs(dateKey, startMin);
+  const he = hs + SLOT_MIN * 60000;
   const out = [];
   for (const s of sessions) {
     const a = Math.max(s.start, hs);
@@ -95,10 +100,6 @@ export function hourSegments(sessions, dateKey, hour) {
   }
   return out.sort((x, y) => (x.running ? 1 : 0) - (y.running ? 1 : 0));
 }
-export const hourStart = (dateKey, hour) => {
-  const b = fromKey(dateKey);
-  return new Date(b.getFullYear(), b.getMonth(), b.getDate(), hour).getTime();
-};
 export const fmtShort = (ms) => {
   const m = Math.round(ms / 60000);
   return m >= 60 ? `${Math.floor(m / 60)}h ${pad2(m % 60)}m` : `${m}m`;
@@ -106,12 +107,12 @@ export const fmtShort = (ms) => {
 
 // Effective plan for a day: what you typed wins (even if you cleared it); otherwise the suggested default.
 export function planFor(day) {
-  const stored = new Map((day?.plan || []).filter((p) => p.hour != null).map((p) => [p.hour, p]));
-  return HOURS.map((hour) => {
-    const p = stored.get(hour);
-    const t = TEMPLATE[hour];
+  const stored = new Map((day?.plan || []).filter((p) => p.start != null).map((p) => [p.start, p]));
+  return SLOTS.map((start) => {
+    const p = stored.get(start);
+    const t = TEMPLATE[start];
     return {
-      hour,
+      start,
       id: p?.id,
       title: p ? p.title : t?.title || '',
       done: !!p?.done,

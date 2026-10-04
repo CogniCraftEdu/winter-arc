@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CATS, catOf } from '../config.js';
-import { fmtClock, fmtHM, fmtTime, pad2, planFor, workMs } from '../lib.js';
+import { fmtClock, fmtHM, fmtTime, hhmm, planFor, workMs } from '../lib.js';
 
 export default function Stopwatch({ state, actions, today, now, day, running, settings }) {
   const timer = state.timer;
@@ -9,8 +9,16 @@ export default function Stopwatch({ state, actions, today, now, day, running, se
   const sessions = [...day.sessions].sort((a, b) => b.start - a.start);
   const worked = workMs(day, CATS, running);
   const target = settings.workTargetHours * 3600000;
-  const hourNow = new Date(now).getHours();
-  const openTasks = planFor(day).filter((p) => p.title.trim() && !p.done && p.hour >= hourNow).slice(0, 4);
+  const d = new Date(now);
+  const minNow = d.getHours() * 60 + d.getMinutes();
+  // Next few distinct things in the plan (consecutive slots with the same title collapse into one).
+  const openTasks = [];
+  for (const p of planFor(day)) {
+    if (p.start + 30 <= minNow || !p.title.trim() || p.done) continue;
+    if (openTasks.some((o) => o.title === p.title)) continue;
+    openTasks.push(p);
+    if (openTasks.length === 4) break;
+  }
   const totals = CATS.map((c) => [c, [...sessions, ...(running ? [running] : [])].filter((s) => s.cat === c.id).reduce((t, s) => t + (s.end - s.start), 0)]).filter(([, ms]) => ms > 0);
 
   const start = (l = label, c = cat) => { actions.startTimer(l, c); setLabel(''); };
@@ -45,7 +53,7 @@ export default function Stopwatch({ state, actions, today, now, day, running, se
         <>
           <h3>Up next in your plan</h3>
           <div className="pills">
-            {openTasks.map((p) => <button key={p.hour} className="pill" onClick={() => start(p.title, p.cat)}>{pad2(p.hour)}:00 · {p.title}</button>)}
+            {openTasks.map((p) => <button key={p.start} className="pill" onClick={() => start(p.title, p.cat)}>{hhmm(p.start)} · {p.title}</button>)}
           </div>
         </>
       )}
