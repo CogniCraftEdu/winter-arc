@@ -4,6 +4,7 @@ const PATHS = {
   plan: 'M4 6h16M4 12h16M4 18h10',
   food: 'M7 3v8a2 2 0 002 2v8M11 3v8M17 3c-2 2-2 6 0 8v10',
   notes: 'M4 20l4-1 11-11-3-3L5 16l-1 4zM14 6l3 3',
+  reel: 'M5 5h9a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2zM16 10l5-3v10l-5-3',
   journey: 'M4 19V5M4 19h16M8 15l4-4 3 3 5-6',
 };
 export default function Icon({ name }) {

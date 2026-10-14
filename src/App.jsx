@@ -9,10 +9,12 @@ import Icon from './components/Icon.jsx';
 import Today from './components/Today.jsx';
 import Plan from './components/Plan.jsx';
 import Journey from './components/Journey.jsx';
+import Reel from './components/Reel.jsx';
 
 const TABS = [
   ['today', 'Today'],
   ['plan', 'Plan'],
+  ['reel', 'Reel'],
   ['journey', 'Journey'],
 ];
 
@@ -86,6 +88,7 @@ export default function App() {
       <main>
         {tab === 'today' && <Today {...ctx} />}
         {tab === 'plan' && <Plan {...ctx} tomorrow={addDays(today, 1)} />}
+        {tab === 'reel' && <Reel {...ctx} />}
         {tab === 'journey' && <Journey {...ctx} />}
       </main>
     </div>

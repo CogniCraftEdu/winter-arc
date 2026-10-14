@@ -1,41 +1,12 @@
 import { CATS, SLEEP } from '../config.js';
-import { fmtShort, planFor, slotMs, slotRange, slotSegments } from '../lib.js';
+import { fmtShort, slotRange } from '../lib.js';
+import { scheduleRows, scheduleSummary } from '../stats.js';
 
 const catColor = (id) => CATS.find((c) => c.id === id)?.color || '#64748b';
 
 export default function Schedule({ actions, today, now, day, running }) {
-  const sessions = [...day.sessions, ...(running ? [running] : [])];
-
-  const rows = planFor(day).map((slot) => {
-    const started = slotMs(today, slot.start) <= now;
-    const ended = slotMs(today, slot.end) <= now;
-    const SLOT_MS = (slot.end - slot.start) * 60000;
-    const live = started && !ended;
-    const segs = started ? slotSegments(sessions, today, slot.start) : [];
-    const logged = segs.reduce((t, s) => t + s.ms, 0);
-    const note = day.actuals?.[slot.start]?.trim();
-    const planned = !!slot.title.trim();
-
-    // A ticked slot or a written note also counts as accounted for.
-    const accounted = Math.min(SLOT_MS, Math.max(logged, slot.done || note ? SLOT_MS : 0));
-
-    let status = null;
-    if (planned && started) {
-      if (slot.done || logged >= SLOT_MS * 0.75) status = 'hit';
-      else if (live) status = 'live';
-      else if (logged >= 5 * 60000) status = 'partial';
-      else status = 'miss';
-    }
-    return { ...slot, slotMs: SLOT_MS, started, ended, live, segs, logged, accounted, status, planned, note };
-  });
-
-  const plannedRows = rows.filter((r) => r.planned && r.started);
-  const settled = plannedRows.filter((r) => r.status !== 'live');
-  const hits = plannedRows.filter((r) => r.status === 'hit').length;
-  const pct = settled.length ? Math.round((settled.filter((r) => r.status === 'hit').length / settled.length) * 100) : null;
-  const endedRows = rows.filter((r) => r.ended);
-  const loggedMs = rows.reduce((t, r) => t + r.logged, 0);
-  const unaccounted = endedRows.reduce((t, r) => t + r.slotMs - r.accounted, 0);
+  const rows = scheduleRows(day, today, now, running);
+  const { pct, hits, planned, loggedMs, unaccounted, endedCount } = scheduleSummary(rows);
 
   return (
     <section className="panel">
@@ -43,9 +14,9 @@ export default function Schedule({ actions, today, now, day, running }) {
 
       <div className="sumstrip">
         <div><b>{pct == null ? '—' : `${pct}%`}</b><span>plan adherence</span></div>
-        <div><b>{hits}/{plannedRows.length}</b><span>planned slots hit</span></div>
+        <div><b>{hits}/{planned}</b><span>planned slots hit</span></div>
         <div><b>{fmtShort(loggedMs)}</b><span>logged today</span></div>
-        <div className={unaccounted > 30 * 60000 ? 'bad' : ''}><b>{endedRows.length ? fmtShort(unaccounted) : '—'}</b><span>unaccounted</span></div>
+        <div className={unaccounted > 30 * 60000 ? 'bad' : ''}><b>{endedCount ? fmtShort(unaccounted) : '—'}</b><span>unaccounted</span></div>
       </div>
 
       <div className="sg">
