@@ -1,6 +1,6 @@
 import { CATS, END, HANDLE, IG_URL, MUSCLES, RULES, START } from './config.js';
 import { useNow } from './hooks.js';
-import { TOTAL_DAYS, addDays, dayNumber, dayResult, emptyDay, fmtDate, fmtHM, inChallenge, streaks, todayKey, workMs } from './lib.js';
+import { TOTAL_DAYS, addDays, dayNumber, dayResult, emptyDay, fmtDate, fmtHM, hhmm, inChallenge, planFor, streaks, todayKey, workMs } from './lib.js';
 import { finishOdds, posterior, priorOf } from './odds.js';
 import { quoteFor } from './quotes.js';
 import { useSnapshot } from './store.js';
@@ -87,6 +87,28 @@ export default function Show() {
     return { k, i, v: d ? workMs(d, CATS) / 3600000 : 0, w, today: k === today, label: fmtDate(k, { day: 'numeric', month: 'short' }) };
   });
   const worked = workMs(day, CATS, running);
+
+  // Countdown + milestones
+  const daysLeft = Math.max(0, TOTAL_DAYS - dn);
+  const pctDone = Math.round((dn / TOTAL_DAYS) * 100);
+  const milestone = inRange && dn % 25 === 0 ? `Milestone: day ${dn}` : inRange && dn === 1 ? 'Day one' : null;
+
+  // Best work day so far (only meaningful once there is something to beat)
+  const priorWork = Object.keys(days).filter((k) => k < today && inChallenge(k)).map((k) => workMs(days[k], CATS));
+  const bestBefore = priorWork.length ? Math.max(...priorWork) : 0;
+  const bestWorkDay = priorWork.length > 0 && worked > 0 && worked >= bestBefore;
+
+  // Tomorrow teaser: only slots you typed yourself (not the suggested defaults)
+  const tomorrow = addDays(today, 1);
+  const tomorrowItems = planFor(days[tomorrow]).filter((p) => p.id && p.title.trim()).slice(0, 3);
+
+  // Same weekday last week
+  const lwKey = addDays(today, -7);
+  const lw = days[lwKey] && inChallenge(lwKey) ? days[lwKey] : null;
+  const lwResult = lw ? dayResult(lw, settings, CATS, RULES) : null;
+  const lwWork = lw ? workMs(lw, CATS) : 0;
+  const lwWeight = lw && lw.weight !== '' && lw.weight != null ? +lw.weight : null;
+  const delta = (a, b, unit = '', digits = 0) => { const d = a - b; return d === 0 ? 'same' : `${d > 0 ? '+' : '−'}${Math.abs(d).toFixed(digits)}${unit}`; };
   const trainedLabels = MUSCLES.filter((m) => (day.trained || []).includes(m.id)).map((m) => m.label);
 
   return (
@@ -100,6 +122,11 @@ export default function Show() {
         <h1>Day {dn}<span> / {TOTAL_DAYS}</span></h1>
         <div className="sh-date">{fmtDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         <div className="sh-progress"><i style={{ width: `${(dn / TOTAL_DAYS) * 100}%` }} /></div>
+        <div className="sh-count">
+          <span>{daysLeft === 0 ? 'Final day' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} to go`}</span>
+          <span>{pctDone}% done</span>
+          {milestone && <b>{milestone}</b>}
+        </div>
         <blockquote>“{quote}”{author && <cite>{author}</cite>}</blockquote>
       </section>
 
@@ -145,6 +172,19 @@ export default function Show() {
         <div><b>{Math.round(finish * 100)}%</b><span>finish odds</span></div>
       </div>
 
+      {bestWorkDay && <div className="sh-badge">Best work day so far · {fmtHM(worked)}</div>}
+
+      {lwResult && (
+        <section className="sh-card">
+          <h2>Vs last {fmtDate(lwKey, { weekday: 'long' })}</h2>
+          <div className="sh-vs">
+            <div><span>Work</span><b>{fmtHM(worked).replace(' ', '')}</b><em>{fmtHM(lwWork).replace(' ', '')} · {delta(worked / 3600000, lwWork / 3600000, 'h', 1)}</em></div>
+            <div><span>Score</span><b>{result.done}/{RULES.length}</b><em>{lwResult.done}/{RULES.length} · {delta(result.done, lwResult.done)}</em></div>
+            <div><span>Weight</span><b>{wNow != null ? (+wNow).toFixed(1) : '—'}</b><em>{lwWeight != null ? `${lwWeight.toFixed(1)}${wNow != null ? ` · ${delta(+wNow, lwWeight, ' kg', 1)}` : ''}` : '—'}</em></div>
+          </div>
+        </section>
+      )}
+
       <section className="sh-card">
         <h2>Hours worked · last {DAYS_SHOWN} days</h2>
         <WorkBars items={series} targetH={settings.workTargetHours} />
@@ -156,6 +196,11 @@ export default function Show() {
 
       <section className="sh-cta">
         <div>Day {dn} filled. Day {dn + 1} tomorrow.</div>
+        {tomorrowItems.length > 0 && (
+          <ul className="sh-tmrw" aria-label="Tomorrow's plan">
+            {tomorrowItems.map((p) => <li key={p.start}><span>{hhmm(p.start)}</span>{p.title}</li>)}
+          </ul>
+        )}
         <a className="sh-follow" href={IG_URL} target="_blank" rel="noopener noreferrer">Follow {HANDLE}</a>
         <p>Every day the dashboard starts empty and I fill it in.</p>
       </section>
