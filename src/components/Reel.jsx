@@ -118,6 +118,12 @@ export default function Reel(props) {
         </section>
 
         <section className="panel">
+          <h2>Public dashboard</h2>
+          <p className="dim">A clean page with today's day, quote, body parts, weight, calories, macros and charts, made for showing people.</p>
+          <a className="btn primary" style={{ display: 'inline-block', textDecoration: 'none', marginTop: 10 }} href="/show" target="_blank" rel="noopener">Open /show ↗</a>
+        </section>
+
+        <section className="panel">
           <h2>Preview &amp; download</h2>
           <div className="seg">
             <button className={mode === 'live' ? 'on' : ''} onClick={() => setMode('live')}>Filled (live)</button>

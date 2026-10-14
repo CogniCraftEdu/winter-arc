@@ -302,3 +302,6 @@ input.note-in:focus { border-bottom: 1px solid var(--text); background: transpar
 .reel-frame svg { width: 100% !important; height: 100% !important; }
 .reel-exit { position: fixed; top: 12px; right: 14px; color: #5d5d66; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; pointer-events: none; opacity: .7; }
 @media (max-width: 760px) { .reel { grid-template-columns: 1fr; } .reel-card { max-width: 420px; width: 100%; margin: 0 auto; } }
+
+.nut-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+@media (max-width: 620px) { .nut-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

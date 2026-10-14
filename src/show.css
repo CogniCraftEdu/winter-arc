@@ -1,0 +1,52 @@
+/* ---------- /show: the public dashboard ---------- */
+.sh { max-width: 520px; margin: 0 auto; padding: 22px 18px 48px; display: grid; gap: 14px; }
+.sh h2 { margin: 0 0 12px; font-size: 11px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); display: block; }
+.sh-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.sh-eyebrow { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.sh-chip { color: var(--text); text-decoration: none; font-size: 13px; border: 1px solid var(--line-2); border-radius: 99px; padding: 5px 13px; }
+.sh-hero { padding: 8px 2px 6px; }
+.sh-hero h1 { margin: 0; font: 600 clamp(64px, 20vw, 104px)/0.95 var(--sans); letter-spacing: -0.05em; }
+.sh-hero h1 span { font-size: .3em; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+.sh-date { margin-top: 10px; color: var(--muted); font-size: 16px; }
+.sh-progress { height: 3px; background: var(--line); border-radius: 3px; margin: 18px 0 20px; overflow: hidden; }
+.sh-progress i { display: block; height: 100%; background: var(--text); }
+.sh-hero blockquote { margin: 0; font: italic 400 clamp(26px, 7vw, 34px)/1.18 var(--serif); }
+.sh-hero cite { display: block; margin-top: 12px; font: 500 11px var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-style: normal; }
+.sh-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; min-width: 0; }
+.sh-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sh-session { font: 500 26px/1.1 var(--sans); letter-spacing: -0.02em; margin-bottom: 6px; }
+.sh-big { white-space: nowrap; font: 300 clamp(32px, 9vw, 50px)/1 var(--sans); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.sh-big small { font-size: .34em; color: var(--muted); letter-spacing: 0; }
+.sh-sub { margin-top: 8px; font-size: 13px; color: var(--muted); }
+.sh-dim { color: var(--muted); font-size: 14px; }
+.sh-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 12px; overflow: hidden; }
+.sh-bar-track i { display: block; height: 100%; background: var(--text); border-radius: 4px; } .sh-bar-track i.over { background: var(--bad); }
+.sh-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.sh-tags span { font-size: 13px; border: 1px solid var(--accent); color: var(--text); border-radius: 99px; padding: 3px 12px; }
+.sh-tags em { color: var(--faint); font-size: 13px; font-style: normal; }
+.bm { display: flex; justify-content: center; gap: 26px; margin: 8px 0 4px; }
+.bm figure { margin: 0; text-align: center; } .bm figcaption { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); margin-top: 4px; }
+.bm-fig { height: 250px; width: auto; display: block; }
+.bm-base { fill: none; stroke: var(--line-2); stroke-width: 1.5; }
+.bm-off { fill: none; stroke: var(--line-2); stroke-width: 1.5; }
+.bm-hit { fill: var(--accent); stroke: var(--accent); stroke-width: 1.5; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 55%, transparent)); }
+.sh-macros { display: flex; gap: 3px; height: 14px; }
+.sh-macros i { display: block; border-radius: 4px; min-width: 0; }
+.sh-macros .p, .sh-macro-legend .p { background: var(--accent); } .sh-macros .c, .sh-macro-legend .c { background: var(--ok); } .sh-macros .f, .sh-macro-legend .f { background: var(--warn); } .sh-macros .none { background: var(--line); }
+.sh-macro-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; font-size: 13.5px; color: var(--muted); }
+.sh-macro-legend b { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 7px; vertical-align: 0; }
+.sh-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sh-tiles div { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px; display: grid; gap: 2px; text-align: center; }
+.sh-tiles b { font: 300 26px/1.1 var(--sans); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; } .sh-tiles b small { font-size: .55em; color: var(--faint); }
+.sh-tiles span { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.sh-svg { width: 100%; height: auto; display: block; }
+.sh-grid { stroke: var(--line); stroke-width: 1; } .sh-tick { fill: var(--faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+.sh-bar { fill: var(--muted); opacity: .75; } .sh-bar.today { fill: var(--text); opacity: 1; }
+.sh-line { stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.sh-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2; } .sh-end { fill: var(--text); font-size: 12.5px; font-weight: 500; }
+.sh-cta { text-align: center; padding: 26px 18px; border: 1px solid var(--line-2); border-radius: 18px; background: linear-gradient(180deg, var(--raised), var(--panel)); }
+.sh-cta > div { font: 500 22px/1.2 var(--sans); letter-spacing: -0.02em; }
+.sh-follow { display: inline-block; margin-top: 16px; background: var(--brand); color: var(--brand-ink); text-decoration: none; font-weight: 600; padding: 13px 26px; border-radius: 99px; font-size: 16px; }
+.sh-cta p { margin: 14px 0 0; color: var(--muted); font-size: 13.5px; }
+.sh-foot { text-align: center; } .sh-foot a { color: var(--faint); font-size: 12px; text-decoration: none; }
+@media (max-width: 380px) { .sh-row { grid-template-columns: 1fr; } }

@@ -5,6 +5,7 @@ import { quoteFor } from '../quotes.js';
 import Schedule from './Schedule.jsx';
 import Stopwatch from './Stopwatch.jsx';
 import NotesPanel from './NotesPanel.jsx';
+import FitnessPanel from './FitnessPanel.jsx';
 
 export default function Today({ state, actions, today, now, day, running, result, settings, dn }) {
   const [quote, author] = quoteFor(dn, today);
@@ -53,6 +54,8 @@ export default function Today({ state, actions, today, now, day, running, result
       </div>
 
       <Schedule actions={actions} today={today} now={now} day={day} running={running} />
+
+      <FitnessPanel actions={actions} today={today} day={day} settings={settings} />
 
       <NotesPanel state={state} actions={actions} today={today} day={day} />
 

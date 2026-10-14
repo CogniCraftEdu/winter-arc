@@ -128,7 +128,7 @@ export default function Journey({ state, actions, today, settings }) {
       <section className="card">
         <h2>Targets</h2>
         <div className="stack">
-          {[['workTargetHours', 'Work hours / day']].map(([key, label]) => (
+          {[['workTargetHours', 'Work hours / day'], ['calorieTarget', 'Calorie target (kcal)'], ['proteinTarget', 'Protein target (g)']].map(([key, label]) => (
             <label key={key} className="field">{label}
               <input type="number" min="1" value={settings[key]} onChange={(e) => actions.setSettings({ [key]: e.target.value === '' ? SETTINGS_DEFAULT[key] : Math.max(1, +e.target.value) })} />
             </label>

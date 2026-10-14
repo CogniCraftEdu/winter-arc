@@ -5,6 +5,8 @@ export const END = '2026-12-18';
 export const SETTINGS_DEFAULT = {
   workTargetHours: 10,
   sleepTargetHours: 7,
+  calorieTarget: 2200,
+  proteinTarget: 140,
   oddsP0: 92, // assumed daily win chance (%)
   oddsN0: 12, // how many days of evidence that assumption is worth
   oddsTarget: 90, // what counts as 'finished': this % of days won
@@ -76,3 +78,22 @@ export const RATINGS = [
   { id: 'focus', label: 'Focus' },
 ];
 
+
+// Public handle shown on the /show page and its follow button.
+export const HANDLE = '@whey.to.lift';
+export const IG_URL = 'https://www.instagram.com/whey.to.lift/';
+
+// Body parts you can mark as trained. `side` says which figure(s) draw it on the body map.
+export const MUSCLES = [
+  { id: 'chest', label: 'Chest' },
+  { id: 'back', label: 'Back' },
+  { id: 'shoulders', label: 'Shoulders' },
+  { id: 'biceps', label: 'Biceps' },
+  { id: 'triceps', label: 'Triceps' },
+  { id: 'forearms', label: 'Forearms' },
+  { id: 'abs', label: 'Abs' },
+  { id: 'glutes', label: 'Glutes' },
+  { id: 'quads', label: 'Quads' },
+  { id: 'hamstrings', label: 'Hamstrings' },
+  { id: 'calves', label: 'Calves' },
+];

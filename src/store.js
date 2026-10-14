@@ -60,6 +60,18 @@ function load() {
   return fresh();
 }
 
+// Read-only view of the same data (used by the public /show page): never writes back to storage.
+export function useSnapshot() {
+  const [state, setState] = useState(load);
+  useEffect(() => {
+    const onStorage = (e) => e.key === KEY && setState(load());
+    window.addEventListener('storage', onStorage);
+    const id = setInterval(() => setState(load()), 5000); // also catches same-tab edits
+    return () => { window.removeEventListener('storage', onStorage); clearInterval(id); };
+  }, []);
+  return state;
+}
+
 export function useStore() {
   const [state, setState] = useState(load);
 
