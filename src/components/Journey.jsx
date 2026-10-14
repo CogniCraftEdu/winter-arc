@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { CATS, HABITS, RULES, SETTINGS_DEFAULT } from '../config.js';
+import Odds from './Odds.jsx';
 import { allDays, dayNumber, dayResult, fmtDate, fmtHM, streaks, workMs } from '../lib.js';
 
 export default function Journey({ state, actions, today, settings }) {
@@ -84,6 +85,8 @@ export default function Journey({ state, actions, today, settings }) {
         )}
       </section>
 
+      <Odds state={state} actions={actions} today={today} settings={settings} />
+
       <section className="card wide">
         <h2>Weekly review</h2>
         {weeks.length === 0 && <p className="dim">Week 1 starts on {fmtDate(days[0])}.</p>}
@@ -127,7 +130,7 @@ export default function Journey({ state, actions, today, settings }) {
         <div className="stack">
           {[['workTargetHours', 'Work hours / day']].map(([key, label]) => (
             <label key={key} className="field">{label}
-              <input type="number" min="1" value={settings[key]} onChange={(e) => actions.setSettings({ [key]: +e.target.value || SETTINGS_DEFAULT[key] })} />
+              <input type="number" min="1" value={settings[key]} onChange={(e) => actions.setSettings({ [key]: e.target.value === '' ? SETTINGS_DEFAULT[key] : Math.max(1, +e.target.value) })} />
             </label>
           ))}
         </div>

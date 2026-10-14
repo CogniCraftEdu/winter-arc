@@ -5,6 +5,10 @@ export const END = '2026-12-18';
 export const SETTINGS_DEFAULT = {
   workTargetHours: 10,
   sleepTargetHours: 7,
+  oddsP0: 92, // assumed daily win chance (%)
+  oddsN0: 12, // how many days of evidence that assumption is worth
+  oddsTarget: 90, // what counts as 'finished': this % of days won
+  oddsDecay: 1, // weekly fatigue: daily odds drop by this % per week
 };
 
 // The six rules. `auto` ones are derived from data and cannot be ticked by hand.
