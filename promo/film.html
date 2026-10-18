@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CogniGuru – Product Film</title>
+<style>
+  @font-face{font-family:NSerif;font-weight:700;src:url(assets/fonts/noto-serif-latin-700-normal.woff2)}
+  @font-face{font-family:NSerif;font-weight:400;src:url(assets/fonts/noto-serif-latin-400-normal.woff2)}
+  @font-face{font-family:NSerif;font-weight:700;font-style:italic;src:url(assets/fonts/noto-serif-latin-700-italic.woff2)}
+  @font-face{font-family:NSerif;font-weight:400;font-style:italic;src:url(assets/fonts/noto-serif-latin-400-italic.woff2)}
+  @font-face{font-family:NSans;font-weight:400;src:url(assets/fonts/noto-sans-latin-400-normal.woff2)}
+  @font-face{font-family:NSans;font-weight:500;src:url(assets/fonts/noto-sans-latin-500-normal.woff2)}
+  @font-face{font-family:NSans;font-weight:600;src:url(assets/fonts/noto-sans-latin-600-normal.woff2)}
+  @font-face{font-family:NDev;font-weight:400;src:url(assets/fonts/noto-sans-devanagari-devanagari-400-normal.woff2)}
+  @font-face{font-family:NDev;font-weight:600;src:url(assets/fonts/noto-sans-devanagari-devanagari-600-normal.woff2)}
+  @font-face{font-family:NTam;font-weight:400;src:url(assets/fonts/noto-sans-tamil-tamil-400-normal.woff2)}
+  @font-face{font-family:NTam;font-weight:600;src:url(assets/fonts/noto-sans-tamil-tamil-600-normal.woff2)}
+
+  :root{--cream:#f5efe8;--green:#1a3b34;--green2:#1c3d36;--teal:#0f7b6c;--terra:#c4663a;--ink:#1b2b27;--mute:#6f7a76;--card:#ffffff}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1920px;height:1080px;overflow:hidden;background:#000}
+  body{font-family:NSans,Inter,sans-serif;color:var(--ink)}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:#000}
+  .scene{position:absolute;inset:0;opacity:0;overflow:hidden;will-change:transform,opacity}
+  .serif{font-family:NSerif,"DejaVu Serif",serif}
+
+  /* ---------- A: black ---------- */
+  #sA{background:#060606;display:grid;place-items:center}
+  #aText{font-family:NSerif,serif;font-weight:700;font-size:74px;color:#f3ece2;letter-spacing:0}
+
+  /* ---------- B: textbook ---------- */
+  #sB{background:radial-gradient(1400px 900px at 50% 45%,#4a2f1c,#150c06)}
+  #bookWrap{position:absolute;left:50%;top:50%;width:1700px;height:1000px;margin:-500px 0 0 -850px;transform-origin:55% 50%}
+  #book{position:absolute;inset:0;display:flex;filter:blur(6px);transform:perspective(2200px) rotateX(10deg) rotateZ(-1.2deg)}
+  .page{position:relative;flex:1;padding:70px 76px;background:linear-gradient(90deg,#d9c392,#efe0bd 18%,#f1e4c3 70%,#e3cf9f);
+    font-family:NSerif,serif;color:#3a2a18;font-size:21px;line-height:1.55;overflow:hidden}
+  .page.l{border-radius:14px 0 0 14px;box-shadow:inset -60px 0 70px -30px rgba(60,35,10,.55)}
+  .page.r{border-radius:0 14px 14px 0;background:linear-gradient(270deg,#d9c392,#efe0bd 18%,#f1e4c3 70%,#e3cf9f);box-shadow:inset 60px 0 70px -30px rgba(60,35,10,.55)}
+  .page h4{font-size:30px;font-style:italic;margin-bottom:14px;color:#2a1c0e}
+  .page p{margin:0 0 16px;text-align:justify}
+  .page .eq{font-style:italic;margin:10px 0 10px 30px;font-size:25px}
+  .page .pn{position:absolute;bottom:34px;font-size:18px;color:#7a6445}
+  .page.l .pn{left:76px}.page.r .pn{right:76px}
+  #bookShade{position:absolute;inset:0;background:radial-gradient(900px 560px at 50% 50%,transparent 35%,rgba(10,5,2,.75));pointer-events:none}
+  #bookGrain{position:absolute;inset:0;opacity:.22;mix-blend-mode:multiply;pointer-events:none}
+  .bokeh{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(255,196,120,.55),rgba(255,160,70,0) 70%);filter:blur(10px)}
+  .cap{position:absolute;left:0;width:100%;text-align:center;font-family:NSerif,serif;color:#f6efe4;opacity:0}
+  #bCap1{bottom:150px;font-size:58px;font-weight:700;text-shadow:0 4px 30px rgba(0,0,0,.8)}
+  #bCap2{bottom:150px;font-size:58px;font-weight:700;font-style:italic;text-shadow:0 4px 30px rgba(0,0,0,.8)}
+  #bGrad{position:absolute;left:0;right:0;bottom:0;height:420px;background:linear-gradient(transparent,rgba(5,3,1,.82));opacity:0}
+
+  /* ---------- App shell ---------- */
+  .app{background:var(--cream)}
+  .hdr{position:absolute;left:0;right:0;top:0;height:88px;background:var(--green);display:flex;align-items:center;padding:0 56px;gap:18px;z-index:3}
+  .hdr img{height:50px;opacity:.97}
+  .hdr .nm{font-weight:600;font-size:32px;color:#f5efe8;letter-spacing:.2px}
+  .hdr .pill{margin-left:auto;background:var(--terra);color:#fff;font-weight:600;font-size:22px;padding:9px 26px;border-radius:30px}
+  .main{position:absolute;left:0;right:0;top:88px;bottom:0;padding:44px 64px;display:grid;grid-template-columns:640px 1fr;gap:52px}
+  .chat{display:flex;flex-direction:column;gap:18px;position:relative;min-height:0}
+  .bub{background:#fff;border-radius:26px;box-shadow:0 10px 36px rgba(26,59,52,.10);font-size:29px;line-height:1.32;font-weight:500;padding:20px 28px;overflow:hidden;flex:none}
+  .bub.u{align-self:flex-end;max-width:600px;border-bottom-right-radius:8px}
+  .bub.t{align-self:flex-start;max-width:640px;border-bottom-left-radius:8px;display:flex;gap:18px;align-items:flex-start}
+  .av{flex:none;width:46px;height:46px;border-radius:50%;background:var(--green);display:grid;place-items:center;margin-top:2px}
+  .av img{width:30px}
+  .tags{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+  .tag{font-size:23px;font-weight:600;padding:8px 20px;border-radius:30px;border:2px solid}
+  .tag.a{color:var(--teal);border-color:var(--teal);background:rgba(15,123,108,.07)}
+  .tag.b{color:var(--terra);border-color:var(--terra);background:rgba(196,102,58,.07)}
+  .listen{align-self:flex-start;display:flex;align-items:center;gap:18px;background:#fff;border-radius:26px;padding:16px 28px;box-shadow:0 10px 36px rgba(26,59,52,.10);flex:none}
+  .listen .lb{font-size:24px;color:var(--mute);font-weight:500}
+  .wave{display:flex;align-items:center;gap:5px;height:60px}
+  .wave i{display:block;width:7px;border-radius:4px;background:var(--terra)}
+  .lcap{font-family:NSerif,serif;font-weight:700;font-size:36px;color:var(--green);padding-left:6px;flex:none}
+  .langs{display:flex;gap:12px;margin-bottom:6px;flex:none}
+  .lg{font-size:26px;font-weight:600;padding:10px 26px;border-radius:30px;background:#e9e1d5;color:#5b6663;font-family:NSans,NDev,NTam,sans-serif}
+  .lg.on{background:var(--green);color:#f5efe8}
+  .lgn{font-size:26px;font-weight:600;padding:9px 18px;color:var(--mute)}
+  .cv{display:flex;flex-direction:column;gap:22px}
+  .card{position:relative;flex:none;background:#fff;border-radius:34px;box-shadow:0 22px 70px rgba(26,59,52,.14);padding:26px 22px 14px;overflow:hidden}
+  .ct{display:flex;align-items:center;gap:14px;padding:0 14px 6px;font-size:25px;color:var(--mute);font-weight:500;font-family:NSans,NDev,NTam,sans-serif}
+  .ct b{color:var(--ink);font-weight:600}
+  .ct .dot{width:12px;height:12px;border-radius:50%;background:var(--teal)}
+  .card svg{display:block;width:100%;height:auto}
+  .path{order:9;margin-top:auto;background:#fff;border-radius:28px;box-shadow:0 10px 36px rgba(26,59,52,.10);padding:18px 28px 12px}
+  .path h5{font-size:22px;letter-spacing:1.4px;text-transform:uppercase;color:var(--mute);font-weight:600;margin-bottom:10px}
+  .pr{display:flex;align-items:center;gap:16px;font-size:25px;font-weight:500;padding:5px 0;color:#9aa3a0}
+  .pr i{flex:none;width:34px;height:34px;border-radius:50%;border:3px solid #cfd6d3;display:grid;place-items:center}
+  .pr.on{color:var(--green)} .pr.on i{background:var(--teal);border-color:var(--teal)}
+  .pr i svg{width:18px;height:18px;opacity:0}.pr.on i svg{opacity:1}
+  .eqs{display:flex;gap:20px}
+  .eqc{font-family:NSerif,serif;font-weight:700;font-size:38px;padding:16px 30px;border-radius:22px;background:#fff;box-shadow:0 10px 36px rgba(26,59,52,.10);border-left:8px solid}
+  .eqc.a{border-color:var(--teal);color:var(--green)}
+  .eqc.b{border-color:var(--terra);color:var(--green)}
+  .eqc sub{font-size:.62em}
+  #cvTitle{font-family:NSerif,NDev,NTam,serif;font-weight:700}
+
+  /* ---------- D: same concept ---------- */
+  #sD{background:var(--green2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px}
+  #sD .l1,#sD .l2{font-family:NSerif,serif;font-weight:700;color:#f5efe8;font-size:112px;letter-spacing:2px;opacity:0}
+  #dRule{height:8px;background:var(--terra);border-radius:4px;width:0}
+
+  /* ---------- F: quiz ---------- */
+  .qwrap{position:absolute;left:340px;right:340px;top:150px}
+  .qchip{display:inline-block;background:var(--green);color:#f5efe8;font-weight:600;font-size:24px;padding:10px 26px;border-radius:30px;margin-bottom:26px}
+  .qq{font-family:NSerif,serif;font-weight:700;font-size:54px;line-height:1.2;color:var(--ink);margin-bottom:38px}
+  .opt{height:98px;border-radius:22px;background:#fff;box-shadow:0 8px 28px rgba(26,59,52,.09);display:flex;align-items:center;gap:26px;padding:0 34px;margin-bottom:18px;font-size:36px;font-weight:500;position:relative;border:3px solid transparent}
+  .opt .k{width:54px;height:54px;border-radius:14px;background:#efe8dc;display:grid;place-items:center;font-weight:600;font-size:28px;color:var(--green)}
+  .opt .ck{margin-left:auto;opacity:0}
+  #fb{margin-top:20px;padding:22px 32px;border-radius:24px;background:rgba(15,123,108,.12);border:2px solid var(--teal);font-size:32px;line-height:1.4;font-weight:500;color:var(--green);opacity:0}
+  #fb b{font-family:NSerif,serif}
+  #qDone{position:absolute;left:0;right:0;top:50%;margin-top:-50px;text-align:center;font-family:NSerif,serif;font-weight:700;font-size:92px;color:var(--green);opacity:0}
+  #cursor{position:absolute;left:0;top:0;width:44px;height:44px;opacity:0;z-index:20;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+  #ripple{position:absolute;width:30px;height:30px;border-radius:50%;border:4px solid var(--terra);opacity:0;z-index:19;margin:-15px 0 0 -15px}
+
+  /* ---------- G: end ---------- */
+  #sG{background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center}
+  #gLogo{width:760px;opacity:0}
+  #gTag{font-family:NSerif,serif;font-weight:700;font-size:54px;color:var(--green);margin-top:46px;opacity:0}
+  #gCta{margin-top:52px;font-weight:600;font-size:40px;color:#fff;background:var(--green);padding:26px 72px;border-radius:70px;opacity:0;box-shadow:0 18px 50px rgba(26,59,52,.28)}
+  #gUrl{margin-top:34px;font-size:30px;color:#6f6a63;opacity:0;letter-spacing:.2px}
+  #gUrl b{color:var(--green);font-weight:600}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- A -->
+  <div class="scene" id="sA"><div id="aText">I don’t understand.</div></div>
+
+  <!-- B -->
+  <div class="scene" id="sB">
+    <div class="bokeh" style="left:140px;top:90px;width:260px;height:260px"></div>
+    <div class="bokeh" style="left:1560px;top:700px;width:340px;height:340px;opacity:.7"></div>
+    <div class="bokeh" style="left:1380px;top:60px;width:180px;height:180px;opacity:.6"></div>
+    <div id="bookWrap"><div id="book">
+      <div class="page l">
+        <h4>6.4 &nbsp;Motion in a Plane</h4>
+        <p>When a body is projected into the air at some angle to the horizontal, it follows a curved path called a <i>trajectory</i>. The only force acting on it, if air resistance is neglected, is its weight, which acts vertically downward with acceleration g.</p>
+        <p>The motion is therefore resolved into two components: a uniform motion along the horizontal and a uniformly accelerated motion along the vertical. The initial velocity u is resolved as</p>
+        <div class="eq">u<sub>x</sub> = u cos θ, &nbsp;&nbsp;u<sub>y</sub> = u sin θ</div>
+        <p>At any instant t the displacement components x and y are found by applying the equations of kinematics independently to each direction. The horizontal acceleration a<sub>x</sub> = 0 whereas a<sub>y</sub> = −g.</p>
+        <div class="eq">x = u cos θ · t</div>
+        <div class="eq">y = u sin θ · t − ½ g t²</div>
+        <p>Eliminating t between the two equations we obtain the equation of the path, y = x tan θ − g x² / (2 u² cos² θ), which is of the form y = ax + bx² and represents a parabola.</p>
+        <p>Solved Example 6.7. A ball is thrown at 20 m s⁻¹ at an angle of 50° above the horizontal. Find the time of flight, the maximum height reached and the horizontal range.</p>
+        <span class="pn">142</span>
+      </div>
+      <div class="page r">
+        <svg viewBox="0 0 560 330" width="100%" style="margin:6px 0 10px"><g fill="none" stroke="#4a3822" stroke-width="2">
+          <path d="M40 290 L520 290 M40 290 L40 20"/><path d="M40 290 Q200 -40 330 130 T520 290" stroke-width="2.6"/>
+          <path d="M40 290 L170 160" stroke-dasharray="6 5"/><path d="M180 290 L180 100" stroke-dasharray="3 5"/><path d="M60 270 A30 30 0 0 0 66 252"/></g>
+          <g fill="#4a3822" font-size="17" font-style="italic" font-family="NSerif"><text x="78" y="266">θ</text><text x="190" y="90">H</text><text x="470" y="316">R</text><text x="14" y="26">y</text><text x="526" y="310">x</text><text x="100" y="196">u</text></g></svg>
+        <h4>Fig. 6.9 &nbsp;Path of a projectile</h4>
+        <p>Time of flight &nbsp;T = 2 u sin θ / g</p>
+        <div class="eq">H = u² sin² θ / 2g</div>
+        <div class="eq">R = u² sin 2θ / g</div>
+        <p>The maximum horizontal range is obtained when θ = 45°. For complementary angles the ranges are equal. At the highest point the vertical component of velocity is zero, while the horizontal component remains u cos θ throughout the flight.</p>
+        <p>It is important to note that the equation of motion in each direction is independent of the other, a result known as the principle of independence of motion; see Section 3.9 for the corresponding treatment of relative velocity.</p>
+        <span class="pn">143</span>
+      </div>
+    </div>
+    <div id="bookGrain"><svg width="100%" height="100%"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 .3  0 0 0 0 .2  0 0 0 0 .1  0 0 0 .9 0"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg></div>
+    </div>
+    <div id="bookShade"></div>
+    <div id="bGrad"></div>
+    <div class="cap" id="bCap1">Every student knows this feeling.</div>
+    <div class="cap" id="bCap2">One explanation. One language.</div>
+  </div>
+
+  <!-- C / E (app instances built by JS) -->
+  <div class="scene app" id="sC"></div>
+  <div class="scene" id="sD"><div class="l1">SAME CONCEPT.</div><div class="l2">DIFFERENT EXPLANATION.</div><div id="dRule"></div></div>
+  <div class="scene app" id="sE"></div>
+
+  <!-- F quiz -->
+  <div class="scene app" id="sF">
+    <div class="hdr"><img src="assets/logo-mark-white.png"><div class="nm">CogniGuru</div><div class="pill">AI Tutor</div></div>
+    <div class="qwrap">
+      <div class="qchip">Practice with AI</div>
+      <div class="qq" id="qq">At the highest point, what is the vertical velocity?</div>
+      <div class="opt" id="oA"><div class="k">A</div>Zero<svg class="ck" id="ckA" width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" fill="#0f7b6c"/><path d="M12 23l7 7 13-14" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="opt" id="oB"><div class="k">B</div>Maximum</div>
+      <div class="opt" id="oC"><div class="k">C</div>Equal to horizontal velocity</div>
+      <div class="opt" id="oD"><div class="k">D</div>9.8 m/s downward</div>
+      <div id="fb"><b>Correct.</b> At the top the ball has stopped rising and hasn’t started falling — v<sub>y</sub> = 0. Sideways speed is unchanged.</div>
+    </div>
+    <div id="qDone">Understood. Finally.</div>
+  </div>
+
+  <!-- G end -->
+  <div class="scene" id="sG">
+    <img id="gLogo" src="assets/logo-full.png">
+    <div id="gTag">Your AI tutor. Your way of learning.</div>
+    <div id="gCta">Join the waitlist</div>
+    <div id="gUrl"><b>cognicraftedu.com</b> — Built for CBSE, ICSE &amp; IB students</div>
+  </div>
+
+  <svg id="cursor" viewBox="0 0 44 44"><path d="M8 4v32l9-8 6 13 6-3-6-13h12z" fill="#fff" stroke="#111" stroke-width="2.4" stroke-linejoin="round"/></svg>
+  <div id="ripple"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const clamp = (x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const ease = x => 1-Math.pow(1-clamp(x),3);
+const easeIO = x => {x=clamp(x);return x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2};
+const win = (t,a,b,fi=.5,fo=.5)=>clamp(Math.min((t-a)/fi,(b-t)/fo));
+const DURATION = 60;
+
+/* ---------- physics ---------- */
+const V0=20, TH=50*Math.PI/180, G=9.8, VX=V0*Math.cos(TH), VY0=V0*Math.sin(TH), FT=2*VY0/G, K=21, OX=96, OY=610;
+const px = s => OX + VX*s*K;
+const py = s => OY - (VY0*s - .5*G*s*s)*K;
+
+function physics(svgId, frac, labelsP, tex){
+  frac = frac;
+  const s = clamp(frac)*FT;
+  let o = '';
+  // grid
+  for(let i=0;i<=8;i++) o += `<line x1="${OX}" x2="${OX+880+40}" y1="${OY-i*70}" y2="${OY-i*70}" stroke="#efe9df" stroke-width="2"/>`;
+  o += `<line x1="${OX}" x2="${OX+960}" y1="${OY}" y2="${OY}" stroke="#1b2b27" stroke-width="4" stroke-linecap="round"/>`;
+  o += `<line x1="${OX}" x2="${OX}" y1="${OY}" y2="${OY-560}" stroke="#1b2b27" stroke-width="4" stroke-linecap="round"/>`;
+  o += `<text x="${OX+960}" y="${OY+44}" font-size="24" fill="#6f7a76" text-anchor="end" font-family="NSans">x (m)</text>`;
+  o += `<text x="${OX-14}" y="${OY-570}" font-size="24" fill="#6f7a76" text-anchor="start" font-family="NSans">y</text>`;
+  // full predicted path (faint)
+  let pf=''; for(let q=0;q<=40;q++){const u=FT*q/40; pf += `${q?'L':'M'}${px(u).toFixed(1)} ${py(u).toFixed(1)}`;}
+  o += `<path d="${pf}" fill="none" stroke="#1b2b27" stroke-opacity=".10" stroke-width="3" stroke-dasharray="3 10" stroke-linecap="round"/>`;
+  // trail
+  if (s>0){ let pt=''; const n=Math.max(2,Math.floor(s/FT*60)); for(let q=0;q<=n;q++){const u=s*q/n; pt += `${q?'L':'M'}${px(u).toFixed(1)} ${py(u).toFixed(1)}`;} o += `<path d="${pt}" fill="none" stroke="#1b2b27" stroke-width="4.5" stroke-linecap="round"/>`; }
+  // stroboscopic ghosts + projections
+  const N=10;
+  for(let i=0;i<=N;i++){
+    const u=FT*i/N; if(u>s+1e-6) break;
+    const gx=px(u), gy=py(u), age=clamp((s-u)/1.0);
+    o += `<line x1="${gx}" y1="${gy}" x2="${gx}" y2="${OY}" stroke="#0f7b6c" stroke-opacity=".22" stroke-width="2" stroke-dasharray="4 6"/>`;
+    o += `<line x1="${gx}" y1="${gy}" x2="${OX}" y2="${gy}" stroke="#c4663a" stroke-opacity=".22" stroke-width="2" stroke-dasharray="4 6"/>`;
+    o += `<circle cx="${gx}" cy="${gy}" r="14" fill="#1a3b34" fill-opacity="${.18}"/>`;
+    o += `<circle cx="${gx}" cy="${OY}" r="9" fill="#0f7b6c"/>`;
+    o += `<circle cx="${OX}" cy="${gy}" r="9" fill="#c4663a"/>`;
+  }
+  // ball
+  const bx=px(s), by=py(s);
+  o += `<ellipse cx="${bx}" cy="${OY+10}" rx="${22 - (OY-by)/40}" ry="6" fill="#000" fill-opacity=".14"/>`;
+  // velocity vectors
+  const vyN = VY0 - G*s, SC=8.2;
+  const ax = bx+VX*SC, ay = by - vyN*SC;
+  const vp = ease(labelsP) * (1-clamp((frac-.955)/.04));
+  if (vp>0){
+    const arrow=(x1,y1,x2,y2,c)=>{const a=Math.atan2(y2-y1,x2-x1),h=15;return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="7" stroke-linecap="round"/><polygon points="${x2+h*.9*Math.cos(a)},${y2+h*.9*Math.sin(a)} ${x2+h*Math.cos(a+2.55)},${y2+h*Math.sin(a+2.55)} ${x2+h*Math.cos(a-2.55)},${y2+h*Math.sin(a-2.55)}" fill="${c}"/>`};
+    o += `<g opacity="${vp}">`;
+    o += `<line x1="${bx}" y1="${by}" x2="${ax}" y2="${ay}" stroke="#1b2b27" stroke-width="3" stroke-dasharray="5 6" stroke-opacity=".55"/>`;
+    o += arrow(bx,by,bx+VX*SC,by,'#0f7b6c');
+    if (Math.abs(vyN*SC)>10) o += arrow(bx,by,bx,by-vyN*SC,'#c4663a');
+    o += `</g>`;
+  }
+  o += `<circle cx="${bx}" cy="${by}" r="21" fill="url(#bg_${svgId})"/>`;
+  o += `<circle cx="${bx-7}" cy="${by-8}" r="6" fill="#fff" fill-opacity=".35"/>`;
+  // apex tag
+  const apex = 1-clamp(Math.abs(s-FT/2)/.45);
+  if (apex>0 && labelsP>0.5){
+    o += `<g opacity="${apex}"><rect x="${bx-70}" y="${by-112}" width="140" height="48" rx="24" fill="#c4663a"/><text x="${bx}" y="${by-79}" font-size="27" font-weight="600" fill="#fff" text-anchor="middle" font-family="NSans">v<tspan font-size="19" dy="6">y</tspan><tspan dy="-6"> = 0</tspan></text></g>`;
+  }
+  // legend
+  const lp=ease(labelsP);
+  if (lp>0){
+    o += `<g opacity="${lp}" font-size="30" font-weight="500" font-family="NSans,NDev,NTam">`;
+    o += `<rect x="250" y="52" width="24" height="24" rx="12" fill="#0f7b6c"/><text x="290" y="73" fill="#1a3b34">${tex.h}</text>`;
+    o += `<rect x="250" y="104" width="24" height="24" rx="12" fill="#c4663a"/><text x="290" y="125" fill="#1a3b34">${tex.v}</text></g>`;
+  }
+  $(svgId).innerHTML = `<defs><radialGradient id="bg_${svgId}" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#3c8a72"/><stop offset="1" stop-color="#143a30"/></radialGradient></defs>` + o;
+}
+
+/* ---------- app builder ---------- */
+function buildApp(id,p,langs){
+  $(id).innerHTML = `
+    <div class="hdr"><img src="assets/logo-mark-white.png"><div class="nm">CogniGuru</div><div class="pill">AI Tutor</div></div>
+    <div class="main">
+      <div class="chat">
+        ${langs?`<div class="langs" id="${p}langs"><div class="lg on" data-i="0">English</div><div class="lg" data-i="1" style="font-family:NDev">हिन्दी</div><div class="lg" data-i="2" style="font-family:NTam">தமிழ்</div></div>`:''}
+        <div class="bub u" id="${p}u"></div>
+        <div class="listen" id="${p}l"><div class="av"><img src="assets/logo-mark-white.png"></div><div class="lb">Listening</div><div class="wave" id="${p}w">${'<i></i>'.repeat(22)}</div></div>
+        <div class="lcap" id="${p}lc">CogniGuru listens.</div>
+        <div class="bub t" id="${p}t"><div class="av"><img src="assets/logo-mark-white.png"></div><div style="flex:1"><div id="${p}tt"></div><div class="tags" id="${p}tg"></div></div></div>
+        <div class="path"><h5>Learning path · Motion in a plane</h5>
+          ${['Split the motion into two parts','Sideways: constant speed','Up & down: gravity','Put it together'].map((x,i)=>`<div class="pr" id="${p}pr${i}"><i><svg viewBox="0 0 18 18"><path d="M3 9.5l4 4 8-9" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></i>${x}</div>`).join('')}</div>
+        <div class="bub t" id="${p}t2"><div class="av"><img src="assets/logo-mark-white.png"></div><div style="flex:1" id="${p}tt2"></div></div>
+      </div>
+      <div class="cv">
+        <div class="card" id="${p}card"><div class="ct"><span class="dot"></span><b id="${p}ctt">Projectile motion</b><span id="${p}cts">· v₀ = 20 m/s, θ = 50°</span></div>
+          <svg id="${p}svg" viewBox="0 0 1060 700"></svg></div>
+        <div class="eqs" id="${p}eqs"><div class="eqc a">x = v<sub>0</sub> cosθ · t</div><div class="eqc b">y = v<sub>0</sub> sinθ · t − ½gt²</div></div>
+      </div>
+    </div>`;
+}
+buildApp('sC','c',false);
+buildApp('sE','e',true);
+
+/* ---------- helpers ---------- */
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function typed(el, full, t0, t, cps){
+  const n = Math.floor(clamp((t-t0)*cps,0,full.length));
+  el.innerHTML = esc(full.slice(0,n)) + '<span style="visibility:hidden">'+esc(full.slice(n))+'</span>';
+  return n>=full.length;
+}
+function reveal(el, t0, t, dur=.45, disp=''){
+  if (t<t0){ el.style.display='none'; return 0; }
+  el.style.display=disp; el.style.maxHeight='none';
+  const p=ease((t-t0)/dur);
+  el.style.opacity=p; el.style.transform=`translateY(${(1-p)*18}px)`;
+  return p;
+}
+function wave(id,t,on){
+  [...$(id).children].forEach((b,i)=>{ b.style.height = on ? (8+44*Math.abs(Math.sin(t*8+i*.62))*(.55+.45*Math.sin(t*3+i))) +'px':'8px'; });
+}
+
+/* ---------- timeline ---------- */
+const TL = {
+  A:[0,4.7], B:[4.3,11.6], C:[11.2,30.2], D:[29.8,34.8], E:[34.4,46.6], F:[46.2,54.8], G:[54.4,60.0]
+};
+function sceneOpacity(k,t){ const [a,b]=TL[k]; return win(t,a,b,.45,.45); }
+
+function renderA(t){
+  const o = win(t,.4,4.3,1.0,.7);
+  $('aText').style.opacity=o; $('aText').style.letterSpacing=(1-ease((t-.4)/2.4))*6+'px';
+  $('aText').style.transform=`scale(${1+ (t/4.7)*.03})`;
+}
+function renderB(t){
+  const u=(t-4.3)/7.3;
+  const blur = 5.2 + 2.6*Math.sin(t*1.1) + (1-clamp(u*3))*2;
+  $('book').style.filter=`blur(${blur}px)`;
+  $('bookWrap').style.transform=`scale(${1.02+u*.16}) translate(${-u*40}px,${-u*18}px)`;
+  $('bGrad').style.opacity=clamp((t-6.2)/1.2);
+  $('bCap1').style.opacity=win(t,6.8,9.6,.8,.6);
+  $('bCap2').style.opacity=win(t,9.0,11.3,.8,.5);
+}
+function renderApp(p, t, c){ // c: config with absolute times
+  const pushed = 1+clamp((t-c.t0)/20)*.05;
+  $('s'+p.toUpperCase()).querySelector('.main').style.transform = `scale(${pushed})`;
+  const uDone = typed($(p+'u'), c.user, c.tUser, t, c.cpsU||26);
+  reveal($(p+'u'), c.tUser-.2, t);
+  const lp = (t>=c.tListen && t<c.tListenEnd) ? win(t,c.tListen,c.tListenEnd,.3,.3) : 0;
+  $(p+'l').style.display = t>=c.tListen && t<c.tListenEnd+.4 ? '' : 'none';
+  $(p+'l').style.opacity = lp; wave(p+'w',t,true);
+  $(p+'lc').style.display = c.listenCap && t>=c.tListen+.5 && t<c.tListenEnd+.4 ? '' : 'none';
+  $(p+'lc').style.opacity = c.listenCap ? win(t,c.tListen+.5,c.tListenEnd,.3,.3):0;
+  const tp = reveal($(p+'t'), c.tBot, t);
+  typed($(p+'tt'), c.bot, c.tBot+.1, t, 30);
+  $(p+'tg').innerHTML = c.tags ? c.tags.map((x,i)=>`<span class="tag ${i?'b':'a'}" style="opacity:${ease((t-c.tTags-i*.35)/.4)};transform:translateY(${(1-ease((t-c.tTags-i*.35)/.4))*10}px)">${x}</span>`).join('') : '';
+  if (c.bot2){ reveal($(p+'t2'), c.tBot2, t); typed($(p+'tt2'), c.bot2, c.tBot2+.1, t, 30);} else $(p+'t2').style.display='none';
+  (c.path||[]).forEach((tt,i)=>$(p+'pr'+i).classList.toggle('on', t>=tt));
+  // canvas
+  const cp = ease((t-c.tCard)/.7);
+  $(p+'card').style.opacity=cp; $(p+'card').style.transform=`translateY(${(1-cp)*40}px)`;
+  const frac = (t-c.tBall)/c.durBall;
+  physics(p+'svg', frac, (t-c.tLabels)/.8, c.tex);
+  $(p+'ctt').textContent = c.title; $(p+'cts').textContent = c.sub;
+  const eqp = ease((t-c.tEq)/.6);
+  $(p+'eqs').style.opacity=eqp; $(p+'eqs').style.transform=`translateY(${(1-eqp)*20}px)`;
+}
+
+const CFG_C = {t0:11.2, user:"Can you explain projectile motion differently?", tUser:12.1, tListen:14.9, tListenEnd:16.5, listenCap:true,
+  tBot:16.7, bot:"Let’s break this into two simple parts.", tTags:18.3, tags:["① Sideways: constant speed","② Up & down: gravity"],
+  tCard:12.8, path:[19.2,21.4,23.4,26.2], tBall:18.4, durBall:6.2, tLabels:20.6, tEq:25.0,
+  tBot2:25.6, bot2:"Sideways speed never changes. Only gravity changes the up-and-down.",
+  title:"Projectile motion", sub:"· v₀ = 20 m/s, θ = 50°",
+  tex:{h:"Horizontal velocity — stays constant", v:"Gravity pulls — vy keeps changing"}};
+const CFG_E = {t0:34.4, user:"Hindi mein samjha sakte ho?", tUser:35.0, tListen:36.6, tListenEnd:37.6, listenCap:false,
+  tBot:37.8, bot:"ज़रूर! चलो इसे आसान शब्दों में समझते हैं।", tTags:39.0, tags:["हिंदी में — वही सिद्धांत, तुम्हारी भाषा में"],
+  tCard:35.0, path:[38.4,40.0,41.4,43.8], tBall:38.2, durBall:4.6, tLabels:39.6, tEq:41.2, cpsU:22,
+  title:"प्रक्षेप्य गति", sub:"· v₀ = 20 m/s, θ = 50°",
+  tex:{h:"क्षैतिज वेग — स्थिर रहता है", v:"गुरुत्व खींचता है — vy बदलता रहता है"}};
+// second language pass inside scene E (Tamil)
+const TAMIL = {t:42.4, bot:"சரி! எளிய வார்த்தைகளில் பார்க்கலாம்.", tag:"உங்கள் மொழியில் பேசும் ஆசிரியர்",
+  title:"எறிபொருள் இயக்கம்", tex:{h:"கிடைமட்ட வேகம் — மாறாது", v:"புவியீர்ப்பு — செங்குத்து வேகம் மாறும்"}};
+
+function renderE(t){
+  let c = CFG_E;
+  if (t>=TAMIL.t){
+    c = Object.assign({}, CFG_E, {bot:TAMIL.bot, tBot:TAMIL.t+.3, tags:[TAMIL.tag], tTags:TAMIL.t+1.5, title:TAMIL.title, tex:TAMIL.tex,
+      tBall:TAMIL.t+.2, durBall:3.4, tLabels:TAMIL.t+1.4, tEq:CFG_E.tEq});
+    // reuse same user bubble
+  }
+  renderApp('e', t, c);
+  const tam = t>=TAMIL.t;
+  $('etg') && 0;
+  [...document.querySelectorAll('#elangs .lg')].forEach((el,i)=>{ el.classList.toggle('on', (i===1&&t>=37.2&&!tam)||(i===2&&tam)||(i===0&&t<37.2)); });
+  $('etg').style.fontFamily = 'NDev,NTam,NSans,sans-serif';
+  $('ett').style.fontFamily = 'NDev,NTam,NSans,sans-serif';
+  $('ecard').querySelector('.ct').style.fontFamily='NDev,NTam,NSans,sans-serif';
+}
+
+function renderD(t){
+  const a=ease((t-30.2)/.6), b=ease((t-31.1)/.6);
+  const l1=document.querySelector('#sD .l1'), l2=document.querySelector('#sD .l2');
+  l1.style.opacity=a; l1.style.transform=`translateY(${(1-a)*30}px)`;
+  l2.style.opacity=b; l2.style.transform=`translateY(${(1-b)*30}px)`;
+  $('dRule').style.width = 1180*ease((t-32.0)/.9)+'px';
+}
+
+function renderF(t){
+  const O={A:$('oA'),B:$('oB'),C:$('oC'),D:$('oD')};
+  const sel = t>=48.55, rev = t>=49.6;
+  Object.keys(O).forEach(k=>{
+    const e=O[k]; let bg='#fff', bd='transparent', op=1;
+    if (sel && !rev) { if(k==='A'){bg='#fbe9df';bd='#c4663a';} }
+    if (rev){ if(k==='A'){bg='#e0f1ed';bd='#0f7b6c';} else op=.45; }
+    e.style.background=bg; e.style.borderColor=bd; e.style.opacity=op;
+    const rowIn = ease((t-(46.8+'ABCD'.indexOf(k)*.18))/.5);
+    e.style.transform=`translateX(${(1-rowIn)*40}px)`; e.style.opacity = op*rowIn;
+  });
+  $('ckA').style.opacity = rev?ease((t-49.6)/.3):0;
+  $('qq').style.opacity=ease((t-46.5)/.5);
+  const f=ease((t-50.2)/.6); $('fb').style.opacity=f; $('fb').style.transform=`translateY(${(1-f)*20}px)`;
+  document.querySelector('.qwrap').style.opacity = 1-ease((t-52.0)/.6);
+  $('qDone').style.opacity=ease((t-52.5)/.7); $('qDone').style.transform=`scale(${.96+.04*ease((t-52.5)/.9)})`;
+  // cursor
+  const cur=$('cursor'), rp=$('ripple');
+  const cp = easeIO((t-47.4)/1.0);
+  const x = 1500+(760-1500)*cp, y = 800+(468-800)*cp;
+  cur.style.opacity = win(t,47.2,51.6,.3,.5);
+  cur.style.transform = `translate(${x}px,${y}px) scale(${t>48.45&&t<48.6?.86:1})`;
+  const rr=clamp((t-48.45)/.6);
+  rp.style.opacity = rr>0&&rr<1 ? (1-rr)*.9 : 0;
+  rp.style.left=760+'px'; rp.style.top=(468+8)+'px'; rp.style.transform=`scale(${1+rr*3.4})`;
+}
+
+function renderG(t){
+  const a=ease((t-54.8)/.9);
+  $('gLogo').style.opacity=a; $('gLogo').style.transform=`scale(${.94+.06*a})`;
+  $('gTag').style.opacity=ease((t-55.8)/.7);
+  $('gCta').style.opacity=ease((t-57.0)/.6);
+  $('gCta').style.transform=`scale(${1+0.025*Math.sin(Math.max(0,t-58)*4)})`;
+  $('gUrl').style.opacity=ease((t-57.7)/.7);
+}
+
+function render(t){
+  ['A','B','C','D','E','F','G'].forEach(k=>{ $('s'+k).style.opacity = sceneOpacity(k,t); $('s'+k).style.display = sceneOpacity(k,t)>0?'':'none'; });
+  // keep hard cuts: scene C & E & F backgrounds are opaque, so overlap crossfades read cleanly
+  $('sG').style.opacity = clamp((t-TL.G[0])/.6);
+  renderA(t); renderB(t); renderApp('c',t,CFG_C); renderD(t); renderE(t); renderF(t); renderG(t);
+  $('cursor').style.display = (t>47&&t<52.5)?'':'none';
+}
+window.render = render;
+if (new URLSearchParams(location.search).get('play')){ const s=performance.now(); (function L(){ render(((performance.now()-s)/1000)%DURATION); requestAnimationFrame(L); })(); } else render(0);
+</script>
+</body>
+</html>

@@ -3,48 +3,52 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CogniCraft AI Tutor – Join the waitlist</title>
+<title>CogniGuru – Your AI tutor. Your way of learning.</title>
 <style>
-  :root{--bg:#070b18;--card:#0d1428;--line:#1f2a4d;--text:#eef2ff;--muted:#8fa0cf;--cyan:#35d0ff;--violet:#8b5cff;--green:#3ddc97}
+  @font-face{font-family:NSerif;font-weight:700;src:url(assets/fonts/noto-serif-latin-700-normal.woff2)}
+  @font-face{font-family:NSans;font-weight:400;src:url(assets/fonts/noto-sans-latin-400-normal.woff2)}
+  @font-face{font-family:NSans;font-weight:600;src:url(assets/fonts/noto-sans-latin-600-normal.woff2)}
+  :root{--cream:#f5efe8;--green:#1a3b34;--teal:#0f7b6c;--terra:#c4663a;--ink:#1b2b27;--mute:#6f7a76}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Inter,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
-    background-image:radial-gradient(900px 600px at 15% -10%,rgba(91,59,255,.45),transparent),radial-gradient(800px 600px at 100% 100%,rgba(0,184,255,.3),transparent)}
-  .wrap{max-width:1100px;margin:0 auto;padding:56px 24px;display:grid;grid-template-columns:1.1fr .9fr;gap:56px;align-items:center}
-  h1{font-size:clamp(38px,5.5vw,64px);font-weight:900;letter-spacing:-2px;line-height:1.05}
-  h1 em{font-style:normal;background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
-  p.lead{color:var(--muted);font-size:20px;line-height:1.5;margin:22px 0 32px;max-width:520px}
-  form{display:flex;gap:10px;flex-wrap:wrap;max-width:520px}
-  input[type=email]{flex:1 1 260px;padding:18px 22px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:17px}
-  input[type=email]:focus{outline:2px solid var(--violet)}
-  button{padding:18px 28px;border-radius:16px;border:0;font-size:17px;font-weight:800;color:#fff;cursor:pointer;
-    background:linear-gradient(135deg,#3aa8ff,#8b5cff);box-shadow:0 12px 40px rgba(100,90,255,.45)}
+  body{font-family:NSans,Inter,"Segoe UI",sans-serif;background:var(--cream);color:var(--ink)}
+  header{background:var(--green);padding:18px 32px;display:flex;align-items:center;gap:14px}
+  header img{height:40px}
+  header span{color:var(--cream);font-weight:600;font-size:22px}
+  header em{margin-left:auto;font-style:normal;background:var(--terra);color:#fff;font-weight:600;font-size:15px;padding:7px 18px;border-radius:30px}
+  .hero{max-width:1180px;margin:0 auto;padding:48px 24px 24px}
+  h1{font-family:NSerif,Georgia,serif;font-size:clamp(34px,5vw,60px);line-height:1.1;letter-spacing:-1px;color:var(--green);text-align:center}
+  h1 em{font-style:normal;color:var(--teal)}
+  p.lead{text-align:center;color:var(--mute);font-size:19px;margin:16px auto 28px;max-width:640px;line-height:1.5}
+  .video{border-radius:24px;overflow:hidden;box-shadow:0 30px 90px rgba(26,59,52,.25);background:#000;line-height:0}
+  video{width:100%;aspect-ratio:16/9;display:block}
+  form{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:34px auto 0;max-width:560px}
+  input[type=email]{flex:1 1 280px;padding:17px 22px;border-radius:40px;border:2px solid #d9d0c3;background:#fff;font-size:17px;font-family:inherit;color:var(--ink)}
+  input[type=email]:focus{outline:none;border-color:var(--teal)}
+  button{padding:17px 34px;border-radius:40px;border:0;font-size:17px;font-weight:600;font-family:inherit;color:#fff;background:var(--green);cursor:pointer;box-shadow:0 12px 30px rgba(26,59,52,.28)}
   button:disabled{opacity:.6;cursor:default}
-  #msg{margin-top:14px;min-height:24px;font-size:16px;color:var(--green)}
-  #msg.err{color:#ff6b81}
-  .video{justify-self:center;width:100%;max-width:380px;border-radius:36px;overflow:hidden;border:6px solid #1b2547;
-    box-shadow:0 40px 120px rgba(60,90,255,.4);background:#000;line-height:0}
-  video{width:100%;aspect-ratio:9/16;display:block}
-  @media(max-width:860px){.wrap{grid-template-columns:1fr;gap:36px;padding-top:32px}.video{order:-1;max-width:300px}}
+  #msg{text-align:center;margin-top:14px;min-height:24px;font-size:16px;color:var(--teal)}
+  #msg.err{color:#b3261e}
+  small{display:block;text-align:center;color:var(--mute);margin:8px 0 56px}
 </style>
 </head>
 <body>
-<main class="wrap">
-  <section>
-    <h1>Stuck on a problem?<br>Meet your <em>AI tutor.</em></h1>
-    <p class="lead">Ask any question in physics, math or chemistry and get a clear, step-by-step explanation. Join the waitlist to be first in line.</p>
-    <form id="f">
-      <input type="email" id="email" placeholder="you@email.com" required autocomplete="email">
-      <button id="b" type="submit">Join the waitlist</button>
-    </form>
-    <div id="msg" role="status"></div>
-  </section>
+<header><img src="assets/logo-mark-white.png" alt=""><span>CogniGuru</span><em>AI Tutor</em></header>
+<main class="hero">
+  <h1>Same concept.<br><em>Different explanation.</em></h1>
+  <p class="lead">An AI tutor that explains it your way, in your language, until it finally clicks. Built for CBSE, ICSE &amp; IB students.</p>
   <div class="video">
-    <video src="ai-tutor-promo.mp4" poster="poster.jpg" autoplay muted loop playsinline controls></video>
+    <video src="cogniguru-film.mp4" poster="film-poster.jpg" controls playsinline preload="metadata"></video>
   </div>
+  <form id="f">
+    <input type="email" id="email" placeholder="you@email.com" required autocomplete="email" aria-label="Email address">
+    <button id="b" type="submit">Join the waitlist</button>
+  </form>
+  <div id="msg" role="status"></div>
+  <small>cognicraftedu.com</small>
 </main>
 <script>
-  // Point this at your form backend (Formspree, Google Apps Script, Supabase, etc.).
-  // It receives a JSON POST: { "email": "..." }. Until set, signups are only saved in this browser.
+  // Point this at your form backend (Formspree, Google Apps Script, Supabase, ...).
+  // It receives a JSON POST: { "email": "..." }. While empty, signups are only stored in this browser.
   const WAITLIST_ENDPOINT = '';
   const f = document.getElementById('f'), msg = document.getElementById('msg'), b = document.getElementById('b');
   f.addEventListener('submit', async e => {
