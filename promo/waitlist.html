@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CogniCraft AI Tutor – Join the waitlist</title>
+<style>
+  :root{--bg:#070b18;--card:#0d1428;--line:#1f2a4d;--text:#eef2ff;--muted:#8fa0cf;--cyan:#35d0ff;--violet:#8b5cff;--green:#3ddc97}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Inter,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
+    background-image:radial-gradient(900px 600px at 15% -10%,rgba(91,59,255,.45),transparent),radial-gradient(800px 600px at 100% 100%,rgba(0,184,255,.3),transparent)}
+  .wrap{max-width:1100px;margin:0 auto;padding:56px 24px;display:grid;grid-template-columns:1.1fr .9fr;gap:56px;align-items:center}
+  h1{font-size:clamp(38px,5.5vw,64px);font-weight:900;letter-spacing:-2px;line-height:1.05}
+  h1 em{font-style:normal;background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+  p.lead{color:var(--muted);font-size:20px;line-height:1.5;margin:22px 0 32px;max-width:520px}
+  form{display:flex;gap:10px;flex-wrap:wrap;max-width:520px}
+  input[type=email]{flex:1 1 260px;padding:18px 22px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:17px}
+  input[type=email]:focus{outline:2px solid var(--violet)}
+  button{padding:18px 28px;border-radius:16px;border:0;font-size:17px;font-weight:800;color:#fff;cursor:pointer;
+    background:linear-gradient(135deg,#3aa8ff,#8b5cff);box-shadow:0 12px 40px rgba(100,90,255,.45)}
+  button:disabled{opacity:.6;cursor:default}
+  #msg{margin-top:14px;min-height:24px;font-size:16px;color:var(--green)}
+  #msg.err{color:#ff6b81}
+  .video{justify-self:center;width:100%;max-width:380px;border-radius:36px;overflow:hidden;border:6px solid #1b2547;
+    box-shadow:0 40px 120px rgba(60,90,255,.4);background:#000;line-height:0}
+  video{width:100%;aspect-ratio:9/16;display:block}
+  @media(max-width:860px){.wrap{grid-template-columns:1fr;gap:36px;padding-top:32px}.video{order:-1;max-width:300px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section>
+    <h1>Stuck on a problem?<br>Meet your <em>AI tutor.</em></h1>
+    <p class="lead">Ask any question in physics, math or chemistry and get a clear, step-by-step explanation. Join the waitlist to be first in line.</p>
+    <form id="f">
+      <input type="email" id="email" placeholder="you@email.com" required autocomplete="email">
+      <button id="b" type="submit">Join the waitlist</button>
+    </form>
+    <div id="msg" role="status"></div>
+  </section>
+  <div class="video">
+    <video src="ai-tutor-promo.mp4" poster="poster.jpg" autoplay muted loop playsinline controls></video>
+  </div>
+</main>
+<script>
+  // Point this at your form backend (Formspree, Google Apps Script, Supabase, etc.).
+  // It receives a JSON POST: { "email": "..." }. Until set, signups are only saved in this browser.
+  const WAITLIST_ENDPOINT = '';
+  const f = document.getElementById('f'), msg = document.getElementById('msg'), b = document.getElementById('b');
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    b.disabled = true; msg.className = ''; msg.textContent = '';
+    try {
+      if (WAITLIST_ENDPOINT) {
+        const r = await fetch(WAITLIST_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/json',Accept:'application/json'}, body:JSON.stringify({email})});
+        if (!r.ok) throw new Error('bad status');
+      } else {
+        const list = JSON.parse(localStorage.getItem('waitlist') || '[]'); list.push(email);
+        localStorage.setItem('waitlist', JSON.stringify(list));
+      }
+      msg.textContent = "You're on the list. We'll email you when it's ready.";
+      f.reset();
+    } catch (err) {
+      msg.className = 'err'; msg.textContent = 'Something went wrong. Please try again.';
+    }
+    b.disabled = false;
+  });
+</script>
+</body>
+</html>
