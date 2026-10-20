@@ -10,6 +10,7 @@ import Today from './components/Today.jsx';
 import Plan from './components/Plan.jsx';
 import Journey from './components/Journey.jsx';
 import Reel from './components/Reel.jsx';
+import ConsistencyFrame from './components/ConsistencyFrame.jsx';
 
 const TABS = [
   ['today', 'Today'],
@@ -66,6 +67,7 @@ export default function App() {
           </dl>
         </div>
         <div className="progress" aria-hidden="true"><i style={{ width: `${progress}%` }} /></div>
+        <ConsistencyFrame days={days} settings={settings} today={today} />
       </header>
 
       {running && tab !== 'today' && (

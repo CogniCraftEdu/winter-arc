@@ -1,10 +1,11 @@
 import { CATS, END, HANDLE, IG_URL, MUSCLES, RULES, START } from './config.js';
 import { useNow } from './hooks.js';
-import { TOTAL_DAYS, addDays, dayNumber, dayResult, emptyDay, fmtDate, fmtHM, hhmm, inChallenge, planFor, streaks, todayKey, workMs } from './lib.js';
+import { TOTAL_DAYS, addDays, diffDays, dayNumber, dayResult, emptyDay, fmtDate, fmtHM, hhmm, inChallenge, planFor, streaks, todayKey, workMs } from './lib.js';
 import { finishOdds, posterior, priorOf } from './odds.js';
 import { quoteFor } from './quotes.js';
 import { useSnapshot } from './store.js';
 import BodyMap from './components/BodyMap.jsx';
+import ConsistencyFrame from './components/ConsistencyFrame.jsx';
 
 const DAYS_SHOWN = 14;
 
@@ -119,9 +120,12 @@ export default function Show() {
       </header>
 
       <section className="sh-hero">
-        <h1>Day {dn}<span> / {TOTAL_DAYS}</span></h1>
+        <h1>
+          {today < START ? <>Starts in {diffDays(START, today)}<span> day{diffDays(START, today) === 1 ? '' : 's'}</span></> : <>Day {dn}<span> / {TOTAL_DAYS}</span></>}
+        </h1>
         <div className="sh-date">{fmtDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-        <div className="sh-progress"><i style={{ width: `${(dn / TOTAL_DAYS) * 100}%` }} /></div>
+        <div className="sh-progress"><i style={{ width: `${today < START ? 0 : (dn / TOTAL_DAYS) * 100}%` }} /></div>
+        <ConsistencyFrame days={days} settings={settings} today={today} compact />
         <div className="sh-count">
           <span>{daysLeft === 0 ? 'Final day' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} to go`}</span>
           <span>{pctDone}% done</span>
@@ -195,7 +199,7 @@ export default function Show() {
       </section>
 
       <section className="sh-cta">
-        <div>Day {dn} filled. Day {dn + 1} tomorrow.</div>
+        <div>{today < START ? `Starts ${fmtDate(START, { weekday: 'long', day: 'numeric', month: 'long' })}.` : `Day ${dn} filled. Day ${dn + 1} tomorrow.`}</div>
         {tomorrowItems.length > 0 && (
           <ul className="sh-tmrw" aria-label="Tomorrow's plan">
             {tomorrowItems.map((p) => <li key={p.start}><span>{hhmm(p.start)}</span>{p.title}</li>)}

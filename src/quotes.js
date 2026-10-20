@@ -1,4 +1,6 @@
-// One quote per challenge day (75). Attributed only where the source is well established.
+import { TOTAL_DAYS } from './lib.js';
+
+// One quote per challenge day. Attributed only where the source is well established.
 const GENERAL = [
   ['We are what we repeatedly do. Excellence, then, is not an act, but a habit.', 'Will Durant'],
   ['Discipline equals freedom.', 'Jocko Willink'],
@@ -71,22 +73,20 @@ const GENERAL = [
   ['Hold the line.'],
 ];
 
-// Quotes tied to a specific point in the 75-day arc.
+// Quotes tied to a point in the arc, placed relative to its length so they stay right if the length changes.
+const T = TOTAL_DAYS;
 const PINNED = {
   1: ['Well begun is half done.'],
-  38: ['Halfway is where most people quit. Stay.'],
-  45: ['The old you is watching. Don\'t go back.'],
-  55: ['The last 20 days are why you started.'],
-  60: ['A few more weeks of discipline for a lifetime of options.'],
-  65: ['Ten more days. Make them your best ten.'],
-  70: ['Don\'t coast to the line. Sprint through it.'],
-  74: ['Finish strong. Strong finishes are remembered.'],
-  75: ['Last day. Win it like the first.'],
+  [Math.ceil(T / 2)]: ['Halfway is where most people quit. Stay.'],
+  [T - 7]: ['One week to go. Make it your best week.'],
+  [T - 3]: ['Don\'t coast to the line. Sprint through it.'],
+  [T - 1]: ['Finish strong. Strong finishes are remembered.'],
+  [T]: ['Last day. Win it like the first.'],
 };
 
 export function quoteFor(dayNo, key) {
   if (PINNED[dayNo]) return PINNED[dayNo];
-  if (dayNo >= 1 && dayNo <= 75) {
+  if (dayNo >= 1 && dayNo <= T) {
     // Skip the pinned days so the general pool is used without repeats.
     const idx = dayNo - 1 - Object.keys(PINNED).filter((d) => +d < dayNo).length;
     return GENERAL[idx % GENERAL.length];

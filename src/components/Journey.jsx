@@ -49,7 +49,7 @@ export default function Journey({ state, actions, today, settings }) {
   return (
     <div className="grid">
       <section className="card wide">
-        <h2>The 76 days</h2>
+        <h2>The {days.length} days</h2>
         <div className="stats">
           <div><b>{won}</b><span>days won</span></div>
           <div><b>{past.length - won}</b><span>days missed</span></div>
@@ -107,7 +107,7 @@ export default function Journey({ state, actions, today, settings }) {
 
       <section className="card wide">
         <h2>Arc goals <span className="count">{state.goals.filter((g) => g.done).length}/{state.goals.length}</span></h2>
-        <p className="dim">What must be true on 18 December? Keep it to a few measurable outcomes.</p>
+        <p className="dim">What must be true on {fmtDate(days[days.length - 1], { day: 'numeric', month: 'long' })}? Keep it to a few measurable outcomes.</p>
         <ul className="rules compact">
           {state.goals.map((g) => (
             <li key={g.id} className={g.done ? 'ok' : ''}>

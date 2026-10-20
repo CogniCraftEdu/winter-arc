@@ -122,3 +122,40 @@ export function planFor(day) {
     };
   });
 }
+
+// ---- GitHub-style consistency frame ---------------------------------------
+// Intensity of a day's cell from how many rules were done (0 = none ... 4 = all, i.e. "consistent").
+export const levelOf = (done, n) => (done <= 0 ? 0 : done >= n ? 4 : done >= n - 1 ? 3 : done >= Math.ceil(n / 2) ? 2 : 1);
+
+// Weeks as columns, Monday-first weekdays as rows (like GitHub's contribution graph).
+export function frameData(days, settings, today, CATS, RULES) {
+  const n = RULES.length;
+  const cells = allDays().map((k) => {
+    const r = dayResult(days[k], settings, CATS, RULES);
+    return { date: k, n: dayNumber(k), done: r.done, won: r.won, level: levelOf(r.done, n), state: k > today ? 'future' : k === today ? 'today' : 'past' };
+  });
+  const weeks = [];
+  let col = null;
+  for (const c of cells) {
+    const dow = (fromKey(c.date).getDay() + 6) % 7; // Mon = 0 ... Sun = 6
+    if (!col || dow === 0) { col = Array(7).fill(null); weeks.push(col); }
+    col[dow] = c;
+  }
+  const months = [];
+  weeks.forEach((w, i) => {
+    const first = w.find(Boolean);
+    const m = fromKey(first.date).toLocaleDateString('en-IN', { month: 'short' });
+    if (!months.length || months[months.length - 1].label !== m) months.push({ col: i, label: m });
+  });
+  const pastWon = cells.filter((c) => c.state === 'past' && c.won).length;
+  const todayCell = cells.find((c) => c.state === 'today');
+  const { current, best } = streaks(days, today, settings, CATS, RULES);
+  return {
+    weeks, months, cells, pastWon, todayCell,
+    consistent: pastWon + (todayCell?.won ? 1 : 0),
+    total: cells.length,
+    left: cells.filter((c) => c.state === 'future').length,
+    streak: current,
+    best,
+  };
+}

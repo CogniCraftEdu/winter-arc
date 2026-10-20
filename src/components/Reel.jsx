@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CATS, END, HABITS, RULES, START, WATER_TARGET } from '../config.js';
-import { TOTAL_DAYS, addDays, dayResult, fmtDate, inChallenge, streaks, workMs } from '../lib.js';
+import { TOTAL_DAYS, dayNumber, dayResult, diffDays, fmtDate, frameData, streaks, workMs } from '../lib.js';
 import { scheduleRows, scheduleSummary } from '../stats.js';
 import DayCard from './DayCard.jsx';
 
@@ -11,13 +11,16 @@ function cardData({ state, today, now, day, running, settings, dn }) {
   const result = dayResult(day, settings, CATS, RULES);
   const { current, best } = streaks(state.days, today, settings, CATS, RULES);
   const sum = scheduleSummary(scheduleRows(day, today, now, running));
-  const last7 = Array.from({ length: 7 }, (_, i) => {
-    const k = addDays(today, i - 7);
-    if (!inChallenge(k)) return 'none';
-    return dayResult(state.days[k], settings, CATS, RULES).won ? 'won' : 'lost';
-  });
+  const frame = frameData(state.days, settings, today, CATS, RULES);
+  const before = today < START;
+  const after = today > END;
+  const dnc = Math.max(1, Math.min(dn, TOTAL_DAYS));
   return {
-    dn: Math.max(1, Math.min(dn, TOTAL_DAYS)),
+    dn: dnc,
+    before,
+    dayText: before ? `Starts in ${diffDays(START, today)}` : after ? 'Complete' : `Day ${dnc}`,
+    dayUnit: before ? (diffDays(START, today) === 1 ? 'day' : 'days') : after ? '' : `of ${TOTAL_DAYS}`,
+    progress: before ? 0 : after ? 1 : dnc / TOTAL_DAYS,
     total: TOTAL_DAYS,
     range: `${fmtDate(START, { day: 'numeric', month: 'short' })} – ${fmtDate(END, { day: 'numeric', month: 'short' })}`,
     dateLabel: fmtDate(today),
@@ -34,7 +37,7 @@ function cardData({ state, today, now, day, running, settings, dn }) {
     habitsTotal: HABITS.length,
     streak: current,
     best,
-    last7,
+    frame,
   };
 }
 
@@ -88,7 +91,7 @@ export default function Reel(props) {
 
   const idleT = mode === 'empty' ? 0 : 1;
   const shownT = t ?? idleT;
-  const hook = shownT <= 0.02 ? startHook : shownT < 0.98 ? 'Filling it in…' : (mode === 'live' && t == null && !data.won ? `Day ${data.dn}: ${data.done}/${data.rules.length} so far` : endHook);
+  const hook = shownT <= 0.02 ? startHook : shownT < 0.98 ? 'Filling it in…' : (mode === 'live' && t == null && !data.won ? `${data.dayText}: ${data.done}/${data.rules.length} so far` : endHook);
 
   const card = <DayCard data={data} t={shownT} hook={hook} />;
 

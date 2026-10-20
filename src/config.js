@@ -1,6 +1,6 @@
 // Challenge definition — edit here, nowhere else.
-export const START = '2026-10-05';
-export const END = '2026-12-18';
+export const START = '2026-10-22';
+export const END = '2026-11-11'; // 21 days: 22 Oct -> 11 Nov
 
 export const SETTINGS_DEFAULT = {
   workTargetHours: 10,

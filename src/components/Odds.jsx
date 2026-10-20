@@ -111,7 +111,7 @@ export default function Odds({ state, actions, today, settings }) {
       <h2>Odds <span className="count">will I keep winning every day?</span></h2>
       <p className="dim">
         A transparent model, not a measurement. It starts from your assumed daily win chance and updates after every finished day.
-        {missed > 0 ? ` ${missed} day${missed === 1 ? '' : 's'} missed so far, so a perfect 75 is gone; the streak odds below are for the run from here.` : resolved.length ? ' Perfect run still intact.' : ''}
+        {missed > 0 ? ` ${missed} day${missed === 1 ? '' : 's'} missed so far, so a perfect ${TOTAL_DAYS} is gone; the streak odds below are for the run from here.` : resolved.length ? ' Perfect run still intact.' : ''}
       </p>
 
       <div className="stats odds-stats">

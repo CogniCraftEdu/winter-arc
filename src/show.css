@@ -62,3 +62,6 @@
 .sh-tmrw { list-style: none; margin: 14px 0 0; padding: 0; text-align: left; display: grid; gap: 6px; font-size: 14.5px; }
 .sh-tmrw li { display: flex; gap: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
 .sh-tmrw span { color: var(--faint); font-variant-numeric: tabular-nums; min-width: 44px; }
+
+.sh .frame { margin: 4px 0 18px; justify-content: space-between; }
+@media (max-width: 380px) { .sh .frame { --cell: 15px; } }
