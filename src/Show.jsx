@@ -3,8 +3,15 @@ import { END, HANDLE, IG_URL, MUSCLES, START } from './config.js';
 import { dayStatus, fitnessFrame, journalFromState, paceInfo, totals } from './fitness.js';
 import { addDays, diffDays, fmtDate, todayKey } from './lib.js';
 import { useSnapshot } from './store.js';
+import { isProofUrl } from './proofs.js';
 import BodyMap from './components/BodyMap.jsx';
 import ConsistencyFrame from './components/ConsistencyFrame.jsx';
+
+// A small tappable screenshot/photo. Only URLs from our own proofs/ storage are ever rendered.
+function Proof({ url, label }) {
+  if (!isProofUrl(url)) return null;
+  return <a className="sh-proof" href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${label}`}><img src={url} alt={label} loading="lazy" /><span>{label} ↗</span></a>;
+}
 
 const EMPTY = { target: { perWeek: 0.75, startWeight: null }, days: {} };
 const sgn = (n, d = 1) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(d)}`;
@@ -86,6 +93,8 @@ export default function Show() {
   const focus = journal.days[today] ? today : dates[dates.length - 1];
   const d = focus ? journal.days[focus] : null;
   const st = d ? dayStatus(d, t) : null;
+  const scaleDate = [...dates].reverse().find((k) => isProofUrl(journal.days[k]?.proofs?.scale));
+  const scaleUrl = scaleDate ? journal.days[scaleDate].proofs.scale : null;
   const endKey = today > END ? today : END;
   const kcal = d?.kcal || 0; const P = d?.p || 0; const Cb = d?.c || 0; const F = d?.f || 0;
   const labels = MUSCLES.filter((m) => (d?.trained || []).includes(m.id)).map((m) => m.label);
@@ -116,6 +125,7 @@ export default function Show() {
                 {pace.status === 'on pace' ? 'On target pace' : `${Math.abs(pace.diff).toFixed(2)} kg ${pace.status} of pace`}
               </div>
             </div>
+            {scaleUrl && <Proof url={scaleUrl} label={`Scale · ${fmtDate(scaleDate, { day: 'numeric', month: 'short' })}`} />}
             <div className="sh-sub">{sgn(-pace.lost)} kg since {fmtDate(pace.startDate, { day: 'numeric', month: 'short' })}{pace.weekChange != null && <> · {sgn(pace.weekChange)} kg in the last 7 days (target −{t.perWeek})</>}</div>
             {pace.points.length > 1 ? <PaceChart pace={pace} endKey={endKey} /> : <p className="sh-dim">The chart appears after a second weigh-in.</p>}
           </>
@@ -132,16 +142,19 @@ export default function Show() {
             <b>{d?.rest ? 'Rest' : st?.run ? '✓ Done' : d?.runKm ? 'Short of target' : 'Not yet'}</b>
             <em>{d?.runKm ? `${d.runKm} / ${t.runKm} km` : '—'}{d?.runMin ? ` · ${d.runMin} min` : ''}{pacePerKm ? ` · ${mmss(pacePerKm)} /km` : ''}</em>
             <i className="sh-mini"><u style={{ width: `${Math.min(100, ((d?.runKm || 0) / t.runKm) * 100)}%` }} /></i>
+            <Proof url={d?.proofs?.run} label="Strava" />
           </div>
           <div className={`it ${st?.gym ? 'done' : ''}`}>
             <span className="sh-k">Gym session</span>
             <b>{d?.rest ? 'Rest' : st?.gym ? '✓ Done' : 'Not yet'}</b>
             <em>{d?.workout || (labels.length ? 'Training' : '—')}</em>
+            <Proof url={d?.proofs?.gym} label="Gym photo" />
           </div>
           <div className={`it ${st?.cal ? 'done' : kcal > (t.kcal || Infinity) ? 'over' : ''}`}>
             <span className="sh-k">Calories</span>
             <b>{kcal ? (st?.cal ? '✓ In target' : 'Over target') : 'Not logged'}</b>
             <em>{kcal ? `${kcal}${t.kcal ? ` / ${t.kcal}` : ''} kcal` : '—'}</em>
+            <Proof url={d?.proofs?.cal} label="HealthifyMe" />
           </div>
           <div className={`it ${st?.vlog ? 'done' : ''}`}>
             <span className="sh-k">Daily vlog</span>

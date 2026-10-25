@@ -120,6 +120,8 @@ export function useStore() {
     togglePlan: (date, id) => editDay(date, (d) => ({ ...d, plan: d.plan.map((p) => (p.id === id ? { ...p, done: !p.done } : p)) })),
     addNote: (date, note) => editDay(date, (d) => ({ ...d, notes: [{ id: uid(), ts: Date.now(), ...note }, ...d.notes] })),
     removeNote: (date, id) => editDay(date, (d) => ({ ...d, notes: d.notes.filter((n) => n.id !== id) })),
+    // Atomic: uploads can finish in any order, so merge into the latest proofs rather than a stale copy.
+    setProof: (date, kind, url) => editDay(date, (d) => ({ ...d, proofs: { ...(d.proofs || {}), [kind]: url } })),
     setField: (date, field, val) => editDay(date, (d) => ({ ...d, [field]: val })),
     setReview: (week, text) => update((s) => ({ ...s, reviews: { ...s.reviews, [week]: text } })),
     setReflection: (date, text) => editDay(date, (d) => ({ ...d, reflection: text })),

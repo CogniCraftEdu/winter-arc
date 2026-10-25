@@ -13,7 +13,7 @@ export function excelBytes(state, today) {
   const dates = Object.keys(j.days).sort();
   const first = dates[0] || today;
 
-  const daily = [['Date', 'Weight (kg)', 'Target weight (kg)', 'vs target (kg)', 'Rest day', 'Run target met', 'Run (km)', 'Run (min)', 'Gym done', 'Workout', 'Body parts', 'Calories', 'Calories in target', 'Protein (g)', 'Carbs (g)', 'Fat (g)', 'Vlog posted', 'Perfect day']];
+  const daily = [['Date', 'Weight (kg)', 'Target weight (kg)', 'vs target (kg)', 'Rest day', 'Run target met', 'Run (km)', 'Run (min)', 'Gym done', 'Workout', 'Body parts', 'Calories', 'Calories in target', 'Protein (g)', 'Carbs (g)', 'Fat (g)', 'Vlog posted', 'Perfect day', 'Vlog link', 'Strava', 'Healthify', 'Gym photo', 'Scale photo']];
   for (let d = first; d <= today; d = addDays(d, 1)) {
     const v = j.days[d] || {};
     const target = pace ? pace.targetAt(d) : null;
@@ -23,6 +23,7 @@ export function excelBytes(state, today) {
       { date: d }, dec(v.w), dec(r2(target)), v.w != null && target != null ? dec(r2(v.w - target)) : null,
       yn(v.rest), v.rest ? 'Rest' : yn(s.run), dec(v.runKm), dec(v.runMin), v.rest ? 'Rest' : yn(s.gym), v.workout || '', (v.trained || []).map((m) => label[m] || m).join(', '),
       int(v.kcal), v.kcal == null ? '' : yn(s.cal), int(v.p), int(v.c), int(v.f), yn(s.vlog), yn(s.perfect),
+      v.vlogUrl || '', v.proofs?.run || '', v.proofs?.cal || '', v.proofs?.gym || '', v.proofs?.scale || '',
     ]);
   }
 
@@ -44,7 +45,7 @@ export function excelBytes(state, today) {
 
   return buildXlsx([
     { name: 'Summary', rows: summary, widths: [36, 28] },
-    { name: 'Daily log', rows: daily, widths: [16, 12, 17, 13, 10, 14, 9, 9, 10, 20, 30, 10, 17, 11, 10, 8, 11, 12] },
+    { name: 'Daily log', rows: daily, widths: [16, 12, 17, 13, 10, 14, 9, 9, 10, 20, 30, 10, 17, 11, 10, 8, 11, 12, 34, 34, 34, 34, 34] },
     { name: 'Weekly', rows: wk, widths: [7, 16, 16, 15, 15, 17, 7, 10, 13, 11, 13, 13] },
   ]);
 }

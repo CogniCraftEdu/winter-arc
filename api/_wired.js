@@ -1,9 +1,10 @@
-import { BlobNotFoundError, head, put } from '@vercel/blob';
+import { BlobNotFoundError, del, head, put } from '@vercel/blob';
 import { createHandlers } from './_handlers.js';
 
 export default createHandlers({
   put,
   head,
+  del,
   fetchJson: async (url) => {
     const r = await fetch(url, { cache: 'no-store' });
     if (!r.ok) throw new Error(`fetch ${r.status}`);

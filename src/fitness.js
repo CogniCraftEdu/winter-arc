@@ -1,5 +1,6 @@
 import { CATS, RULES } from './config.js';
 import { addDays, allDays, buildFrame, dayNumber, dayResult, diffDays } from './lib.js';
+import { isProofUrl } from './proofs.js';
 
 // Everything the public page, the Excel export and the publish step need, in one plain shape:
 // { target: { perWeek, startWeight }, days: { 'YYYY-MM-DD': { w, runDone, runKm, runMin, gymDone, workout, trained, kcal, p, c, f } } }
@@ -19,9 +20,10 @@ export function journalFromState(state, today) {
       runDone: !!r.checks.run, runKm: num(d.run?.km), runMin: num(d.run?.min),
       gymDone: !!r.checks.gym, workout: (d.workout || '').trim(), trained: d.trained || [],
       kcal: num(nut.kcal), p: num(nut.p), c: num(nut.c), f: num(nut.f),
+      proofs: Object.fromEntries(Object.entries(d.proofs || {}).filter(([, u]) => isProofUrl(u)).map(([k, u]) => [k, u.trim()])),
       rest: !!d.rest, vlog: !!r.checks.vlog, vlogUrl: /^https:\/\/(www\.)?instagram\.com\//.test(d.vlogUrl || '') ? d.vlogUrl.trim() : '',
     };
-    const any = row.w != null || row.runDone || row.gymDone || row.kcal != null || row.workout || row.trained.length || row.rest || row.vlog;
+    const any = row.w != null || row.runDone || row.gymDone || row.kcal != null || row.workout || row.trained.length || row.rest || row.vlog || Object.keys(row.proofs).length;
     if (any) out[date] = row;
   }
   return { target: { perWeek: num(settings.targetLossPerWeek) ?? 0.75, startWeight: num(settings.startWeight), runKm: num(settings.runTargetKm) ?? 10, kcal: num(settings.calorieTarget), protein: num(settings.proteinTarget) }, days: out };

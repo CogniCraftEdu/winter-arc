@@ -1,6 +1,6 @@
 # Winter Arc · 21 Days Hard Challenge
 
-A 21-day discipline + fitness tracker (22 Oct → 11 Nov 2026; change `START` / `END` in `src/config.js`).
+A 21-day discipline + fitness tracker (Day 1 = Mon 26 Oct → 15 Nov 2026; change `START` / `END` in `src/config.js`).
 React + Vite. Your data lives in your browser; only the fitness numbers you choose to publish go to the public page.
 
 | Route | What it is |
@@ -21,6 +21,18 @@ Followers open the link on their own phones, so the page reads your published nu
 5. Instagram bio link: `https://YOUR-SITE.vercel.app/`
 
 Only these fields are ever published: weight, run done/km/min, gym done/workout name/body parts, calories and macros, rest day, vlog posted (+ an optional Instagram link), your weekly loss target and calorie/protein targets. Notes, plans, work hours, habits and the stopwatch log are never sent (the server also drops anything else).
+
+## Where the data lives
+
+| What | Where |
+|---|---|
+| Numbers you type in `/app` (weight, km, calories, workout, rest day, vlog tick) | Your browser (localStorage) |
+| Published copy of the fitness numbers | Vercel Blob: `public/fitness.json` (what `/` reads) |
+| Screenshots and photos (Strava, HealthifyMe, gym, scale) | Vercel Blob: `proofs/<date>/…` (shrunk to ≤1400 px JPEG in the browser first) |
+| Password | `ADMIN_TOKEN` in Vercel env vars, and saved once in your browser (Journey → Public page) |
+
+Strava / HealthifyMe are not connected automatically: you type the numbers and attach the screenshot as proof.
+Crop Strava maps (home location) and HealthifyMe screens (name, email) before uploading. Anyone with the link can open an uploaded image.
 
 ## Daily update (2 minutes, from your phone, at `/app`)
 
