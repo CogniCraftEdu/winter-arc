@@ -5,6 +5,8 @@ export const END = '2026-11-11'; // 21 days: 22 Oct -> 11 Nov
 export const SETTINGS_DEFAULT = {
   workTargetHours: 10,
   sleepTargetHours: 7,
+  targetLossPerWeek: 0.75, // kg per week
+  startWeight: '', // optional; the first weight you log is used if empty
   calorieTarget: 2200,
   proteinTarget: 140,
   oddsP0: 92, // assumed daily win chance (%)
@@ -22,7 +24,8 @@ export const RULES = [
   { id: 'sleep', label: '7 hours sleep', hint: '11 PM → 6 AM.' },
   { id: 'vlog', label: 'Daily vlog posted', hint: 'Posted between 10 and 11 PM.' },
   { id: 'work', label: '10 hours of work', hint: 'Counted automatically from the stopwatch.', auto: true },
-  { id: 'gym', label: 'Gym or run', hint: '6:30–8:30 AM. Counted if you log a Gym session or tick it.' },
+  { id: 'run', label: 'Morning run', hint: 'Counts if you log a Run session or enter distance, or tick it.' },
+  { id: 'gym', label: 'Evening gym', hint: 'Counts if you log a Gym session or pick body parts, or tick it.' },
 ];
 
 // The waking day (06:00-23:00) is planned in slots. A slot is identified by its start in
@@ -33,7 +36,7 @@ const t = (h, m = 0) => h * 60 + m;
 const hourly = (from, to) => Array.from({ length: to - from }, (_, i) => ({ start: t(from + i), end: t(from + i + 1) }));
 export const SLOTS = [
   { start: t(6), end: t(6, 30) },   // brush, freshen up, face wash
-  { start: t(6, 30), end: t(8, 30) }, // gym
+  { start: t(6, 30), end: t(8, 30) }, // morning run
   { start: t(8, 30), end: t(9) },   // bath
   ...hourly(9, 23),                 // 09:00-23:00, one hour each
 ];
@@ -41,7 +44,8 @@ export const SLOT_END = Object.fromEntries(SLOTS.map((s) => [s.start, s.end]));
 export const SLEEP = { from: '23:00', to: '06:00', label: 'Sleep' }; // one long block
 export const TEMPLATE = {
   [t(6)]: { title: 'Brush + freshen up + face wash', cat: 'other' },
-  [t(6, 30)]: { title: 'Gym', cat: 'gym' },
+  [t(6, 30)]: { title: 'Morning run', cat: 'run' },
+  [t(18)]: { title: 'Evening gym', cat: 'gym' },
   [t(8, 30)]: { title: 'Bath + get ready', cat: 'other' },
   [t(13)]: { title: 'Lunch: meal + protein', cat: 'meal' },
   [t(21)]: { title: 'Protein dinner + family + documentary', cat: 'meal' },
@@ -52,7 +56,8 @@ export const TEMPLATE = {
 export const CATS = [
   { id: 'work', label: 'Work', work: true, color: '#5b8cff' },
   { id: 'study', label: 'Study', work: true, color: '#a78bfa' },
-  { id: 'gym', label: 'Gym / Run', color: '#34d399' },
+  { id: 'run', label: 'Run', color: '#22d3ee' },
+  { id: 'gym', label: 'Gym', color: '#34d399' },
   { id: 'meal', label: 'Meal', color: '#fbbf24' },
   { id: 'vlog', label: 'Vlog / Plan', color: '#f472b6' },
   { id: 'rest', label: 'Rest / Family', color: '#94a3b8' },

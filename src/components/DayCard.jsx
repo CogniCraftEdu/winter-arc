@@ -71,11 +71,11 @@ export default function DayCard({ data, t, hook }) {
       {label(PAD, 820, 'Score')}
       <text x={W - PAD} y={888} fontFamily={FONT} fill={score === n ? C.ok : C.text} fontSize={100} fontWeight={300} textAnchor="end" letterSpacing={-4}>{score}<tspan fill={C.faint} fontSize={58}>/{n}</tspan></text>
       {data.rules.map((r, i) => {
-        const y = 920 + i * 66;
+        const y = 916 + i * 60;
         const p = shown[i];
         return (
           <g key={r.id}>
-            <line x1={PAD} x2={W - PAD} y1={y + 34} y2={y + 34} stroke={C.line} strokeWidth={1.5} />
+            <line x1={PAD} x2={W - PAD} y1={y + 31} y2={y + 31} stroke={C.line} strokeWidth={1.5} />
             <circle cx={PAD + 18} cy={y + 2} r={17} fill={p > 0 ? C.ok : 'none'} fillOpacity={p} stroke={p > 0 ? C.ok : C.faint} strokeWidth={2.5} />
             {p >= 1 && <path d={`M${PAD + 10},${y + 3} l6,7 l12,-14`} fill="none" stroke={C.bg} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" />}
             {text({ x: PAD + 58, y: y + 14, fontSize: 33, fill: p >= 1 ? C.muted : C.text }, r.label)}

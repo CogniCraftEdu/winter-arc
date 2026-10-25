@@ -3,7 +3,7 @@ import { CATS, END, RULES, START } from './config.js';
 import { useStore } from './store.js';
 import { useNow } from './hooks.js';
 import {
-  TOTAL_DAYS, addDays, dayNumber, dayResult, diffDays, emptyDay, fmtClock, fmtDate, inChallenge, streaks, todayKey,
+  TOTAL_DAYS, addDays, dayNumber, dayResult, diffDays, emptyDay, fmtClock, fmtDate, frameData, inChallenge, streaks, todayKey,
 } from './lib.js';
 import Icon from './components/Icon.jsx';
 import Today from './components/Today.jsx';
@@ -11,6 +11,7 @@ import Plan from './components/Plan.jsx';
 import Journey from './components/Journey.jsx';
 import Reel from './components/Reel.jsx';
 import ConsistencyFrame from './components/ConsistencyFrame.jsx';
+import { getPublish, journalFromState, journalHash, publishJournal, savePublish } from './publish.js';
 
 const TABS = [
   ['today', 'Today'],
@@ -33,6 +34,19 @@ export default function App() {
   useEffect(() => {
     document.title = timer ? `⏱ ${fmtClock(now - timer.startedAt)} · ${timer.label}` : `Winter Arc · ${TOTAL_DAYS} Days Hard Challenge`;
   }, [timer, now]);
+
+  // Auto-publish the fitness journal a few seconds after it changes (only once you have saved a publish password).
+  useEffect(() => {
+    const { token, hash } = getPublish();
+    if (!token) return undefined;
+    const journal = journalFromState(state, today);
+    if (journalHash(journal) === hash) return undefined;
+    const id = setTimeout(async () => {
+      const r = await publishJournal(journal, token);
+      savePublish({ last: r, ...(r.ok ? { hash: journalHash(journal) } : r.status === 401 ? { token: '' } : {}) }); // a wrong password turns auto-publish off
+    }, 4000);
+    return () => clearTimeout(id);
+  }, [state.days, state.settings, today]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const day = { ...emptyDay(), ...(days[today] || {}) };
   const running = timer ? { id: 'running', label: timer.label, cat: timer.cat, start: timer.startedAt, end: now } : null;
@@ -67,7 +81,7 @@ export default function App() {
           </dl>
         </div>
         <div className="progress" aria-hidden="true"><i style={{ width: `${progress}%` }} /></div>
-        <ConsistencyFrame days={days} settings={settings} today={today} />
+        <ConsistencyFrame frame={frameData(days, settings, today, CATS, RULES)} />
       </header>
 
       {running && tab !== 'today' && (

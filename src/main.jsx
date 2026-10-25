@@ -5,7 +5,8 @@ import Show from './Show.jsx';
 import './styles.css';
 import './show.css';
 
-// /show (or #/show) is the clean public dashboard; everything else is the tracker.
-const isShow = /^\/show\/?$/.test(window.location.pathname) || window.location.hash === '#/show';
+// "/" is the public fitness page (the Instagram bio link). "/app" is the private tracker.
+const path = window.location.pathname.replace(/\/+$/, '') || '/';
+const isApp = path === '/app' || window.location.hash === '#/app';
 
-createRoot(document.getElementById('root')).render(isShow ? <Show /> : <App />);
+createRoot(document.getElementById('root')).render(isApp ? <App /> : <Show />);

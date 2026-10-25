@@ -1,215 +1,172 @@
-import { CATS, END, HANDLE, IG_URL, MUSCLES, RULES, START } from './config.js';
-import { useNow } from './hooks.js';
-import { TOTAL_DAYS, addDays, diffDays, dayNumber, dayResult, emptyDay, fmtDate, fmtHM, hhmm, inChallenge, planFor, streaks, todayKey, workMs } from './lib.js';
-import { finishOdds, posterior, priorOf } from './odds.js';
-import { quoteFor } from './quotes.js';
+import { useEffect, useState } from 'react';
+import { END, HANDLE, IG_URL, MUSCLES, START } from './config.js';
+import { fitnessFrame, journalFromState, paceInfo, totals } from './fitness.js';
+import { addDays, diffDays, fmtDate, todayKey } from './lib.js';
 import { useSnapshot } from './store.js';
 import BodyMap from './components/BodyMap.jsx';
 import ConsistencyFrame from './components/ConsistencyFrame.jsx';
 
-const DAYS_SHOWN = 14;
+const EMPTY = { target: { perWeek: 0.75, startWeight: null }, days: {} };
+const sgn = (n, d = 1) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(d)}`;
 
-function WorkBars({ items, targetH }) {
-  const W = 480; const H = 150; const pad = { l: 30, r: 8, t: 10, b: 24 };
-  const max = Math.max(targetH, ...items.map((i) => i.v), 1);
-  const bw = (W - pad.l - pad.r) / items.length;
-  const Y = (v) => pad.t + (1 - v / max) * (H - pad.t - pad.b);
+// Published data for everyone; falls back to this browser's own data (the owner previewing, or local dev).
+function usePublished() {
+  const [s, setS] = useState({ status: 'loading' });
+  useEffect(() => {
+    let on = true;
+    const load = () => fetch('/api/public').then((r) => (r.status === 404 ? { empty: true } : r.ok ? r.json() : Promise.reject()))
+      .then((d) => on && setS(d.empty ? { status: 'empty' } : { status: 'ok', data: d }))
+      .catch(() => on && setS((p) => (p.status === 'ok' ? p : { status: 'error' })));
+    load();
+    const id = setInterval(load, 60000);
+    return () => { on = false; clearInterval(id); };
+  }, []);
+  return s;
+}
+
+function PaceChart({ pace, endKey }) {
+  const W = 480; const H = 190; const m = { l: 44, r: 50, t: 16, b: 26 };
+  const x1 = Math.max(1, diffDays(endKey, pace.startDate));
+  const X = (date) => m.l + (diffDays(date, pace.startDate) / x1) * (W - m.l - m.r);
+  const tEnd = pace.targetAt(endKey);
+  const vals = [...pace.points.map((p) => p.w), pace.start, tEnd];
+  const lo = Math.min(...vals); const hi = Math.max(...vals); const pad = Math.max(0.4, (hi - lo) * 0.15);
+  const Y = (v) => m.t + (1 - (v - (lo - pad)) / (hi - lo + 2 * pad)) * (H - m.t - m.b);
+  const line = pace.points.map((p, i) => `${i ? 'L' : 'M'}${X(p.date).toFixed(1)},${Y(p.w).toFixed(1)}`).join(' ');
+  const last = pace.points[pace.points.length - 1];
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Hours worked, last 14 days" className="sh-svg">
-      <line x1={pad.l} x2={W - pad.r} y1={Y(targetH)} y2={Y(targetH)} className="sh-grid" />
-      <text x={pad.l - 6} y={Y(targetH) + 4} textAnchor="end" className="sh-tick">{targetH}h</text>
-      <text x={pad.l - 6} y={Y(0) + 4} textAnchor="end" className="sh-tick">0</text>
-      {items.map((it, i) => {
-        const h = Math.max(0, Y(0) - Y(it.v));
-        const x = pad.l + i * bw + bw * 0.2;
-        return <rect key={it.k} x={x} y={Y(0) - h} width={bw * 0.6} height={h} rx={Math.min(4, bw * 0.3)} className={it.today ? 'sh-bar today' : 'sh-bar'} />;
-      })}
-      <text x={pad.l + bw * 0.5} y={H - 6} textAnchor="middle" className="sh-tick">{items[0].label}</text>
-      <text x={W - pad.r - bw * 0.5} y={H - 6} textAnchor="middle" className="sh-tick">{items[items.length - 1].label}</text>
-    </svg>
+    <figure className="sh-fig">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Weight versus target pace. Now ${last.w} kg, target ${pace.targetNow} kg.`} className="sh-svg">
+        {[lo, hi].map((v) => <g key={v}><line x1={m.l} x2={W - m.r} y1={Y(v)} y2={Y(v)} className="sh-grid" /><text x={m.l - 6} y={Y(v) + 4} textAnchor="end" className="sh-tick">{v.toFixed(1)}</text></g>)}
+        <line x1={X(pace.startDate)} y1={Y(pace.start)} x2={X(endKey)} y2={Y(tEnd)} className="sh-target" />
+        <path d={line} fill="none" className="sh-line" />
+        {pace.points.map((p) => <circle key={p.date} cx={X(p.date)} cy={Y(p.w)} r="3" className="sh-pt" />)}
+        <circle cx={X(last.date)} cy={Y(last.w)} r="5.5" className="sh-dot" />
+        <text x={X(last.date) + 9} y={Y(last.w) + 4} className="sh-end">{last.w.toFixed(1)}</text>
+        <text x={m.l} y={H - 6} className="sh-tick">{fmtDate(pace.startDate, { day: 'numeric', month: 'short' })}</text>
+        <text x={W - m.r} y={H - 6} textAnchor="end" className="sh-tick">{fmtDate(endKey, { day: 'numeric', month: 'short' })}</text>
+      </svg>
+      <figcaption className="sh-legend"><span><i className="a" />Weight</span><span><i className="b" />Target pace (−{pace.perWeek} kg / week)</span></figcaption>
+    </figure>
   );
 }
 
-function WeightLine({ items }) {
-  const pts = items.filter((i) => i.w != null);
-  if (pts.length < 2) return <p className="sh-dim">Log your weight on 2 days to see the trend.</p>;
-  const W = 480; const H = 150; const pad = { l: 40, r: 44, t: 14, b: 24 };
-  const lo = Math.min(...pts.map((p) => p.w)); const hi = Math.max(...pts.map((p) => p.w));
-  const span = Math.max(1, hi - lo); const y0 = lo - span * 0.2; const y1 = hi + span * 0.2;
-  const X = (i) => pad.l + (i / (items.length - 1)) * (W - pad.l - pad.r);
-  const Y = (v) => pad.t + (1 - (v - y0) / (y1 - y0)) * (H - pad.t - pad.b);
-  const d = pts.map((p, n) => `${n ? 'L' : 'M'}${X(p.i).toFixed(1)},${Y(p.w).toFixed(1)}`).join(' ');
-  const last = pts[pts.length - 1];
+function RunBars({ days, today }) {
+  const items = Array.from({ length: 14 }, (_, i) => { const k = addDays(today, i - 13); return { k, v: days[k]?.runKm || 0, today: k === today }; });
+  const max = Math.max(5, ...items.map((i) => i.v));
+  const W = 480; const H = 120; const pad = { l: 34, r: 6, t: 10, b: 22 }; const bw = (W - pad.l - pad.r) / items.length;
+  const Y = (v) => pad.t + (1 - v / max) * (H - pad.t - pad.b);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Weight, last 14 days" className="sh-svg">
-      {[lo, hi].map((v) => <g key={v}><line x1={pad.l} x2={W - pad.r} y1={Y(v)} y2={Y(v)} className="sh-grid" /><text x={pad.l - 6} y={Y(v) + 4} textAnchor="end" className="sh-tick">{v.toFixed(1)}</text></g>)}
-      <path d={d} fill="none" className="sh-line" />
-      <circle cx={X(last.i)} cy={Y(last.w)} r="5" className="sh-dot" />
-      <text x={X(last.i) + 9} y={Y(last.w) + 4} className="sh-end">{last.w.toFixed(1)}</text>
-      <text x={pad.l} y={H - 6} className="sh-tick">{items[0].label}</text>
-      <text x={W - pad.r} y={H - 6} textAnchor="end" className="sh-tick">{items[items.length - 1].label}</text>
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Run distance, last 14 days" className="sh-svg">
+      <text x={pad.l - 6} y={Y(max) + 4} textAnchor="end" className="sh-tick">{max} km</text>
+      <text x={pad.l - 6} y={Y(0) + 4} textAnchor="end" className="sh-tick">0</text>
+      <line x1={pad.l} x2={W - pad.r} y1={Y(0)} y2={Y(0)} className="sh-grid" />
+      {items.map((it, i) => <rect key={it.k} x={pad.l + i * bw + bw * 0.2} y={Y(it.v)} width={bw * 0.6} height={Math.max(0, Y(0) - Y(it.v))} rx="4" className={it.today ? 'sh-bar today' : 'sh-bar'} />)}
+      <text x={pad.l + bw * 0.5} y={H - 5} textAnchor="middle" className="sh-tick">{fmtDate(items[0].k, { day: 'numeric', month: 'short' })}</text>
+      <text x={W - pad.r - bw * 0.5} y={H - 5} textAnchor="middle" className="sh-tick">{fmtDate(items[13].k, { day: 'numeric', month: 'short' })}</text>
     </svg>
   );
 }
 
 export default function Show() {
-  const state = useSnapshot();
-  const now = useNow(1000);
   const today = todayKey();
-  const { settings, days, timer } = state;
-  const day = { ...emptyDay(), ...(days[today] || {}) };
-  const running = timer ? { id: 'running', label: timer.label, cat: timer.cat, start: timer.startedAt, end: now } : null;
-  const result = dayResult(day, settings, CATS, RULES);
-  const { current, best } = streaks(days, today, settings, CATS, RULES);
-  const inRange = inChallenge(today);
-  const dn = inRange ? dayNumber(today) : today > END ? TOTAL_DAYS : 1;
-  const [quote, author] = quoteFor(dn, today);
+  const published = usePublished();
+  const local = journalFromState(useSnapshot(), today);
+  const hasLocal = Object.keys(local.days).length > 0;
+  const journal = published.status === 'ok' ? published.data : hasLocal ? local : EMPTY;
+  const preview = published.status !== 'ok' && hasLocal;
 
-  // Weight: latest logged on or before today, change since the first logged day.
-  const logged = Object.keys(days).filter((k) => k <= today && days[k]?.weight !== '' && days[k]?.weight != null).sort();
-  const wNow = logged.length ? days[logged[logged.length - 1]].weight : null;
-  const wDelta = logged.length > 1 ? wNow - days[logged[0]].weight : null;
+  useEffect(() => { document.title = `Fitness Journey · ${HANDLE}`; }, []);
 
-  // Nutrition
-  const nut = day.nutrition || {};
-  const kcal = +nut.kcal || 0; const P = +nut.p || 0; const Cb = +nut.c || 0; const F = +nut.f || 0;
-  const macroKcal = P * 4 + Cb * 4 + F * 9;
-
-  // Odds of finishing (same model as the Journey tab)
-  const resolved = Array.from({ length: Math.max(0, dn - 1) }, (_, i) => dayResult(days[addDays(START, i)], settings, CATS, RULES).won);
-  const post = posterior({ results: resolved, prior: priorOf(settings.oddsP0 / 100, settings.oddsN0) });
-  const finish = finishOdds({ ...post, wins: resolved.filter(Boolean).length, day: dn, total: TOTAL_DAYS, delta: settings.oddsDecay / 100, target: settings.oddsTarget / 100 });
-
-  // Last 14 days series
-  const series = Array.from({ length: DAYS_SHOWN }, (_, i) => {
-    const k = addDays(today, i - (DAYS_SHOWN - 1));
-    const d = days[k];
-    const w = d?.weight !== '' && d?.weight != null ? +d.weight : null;
-    return { k, i, v: d ? workMs(d, CATS) / 3600000 : 0, w, today: k === today, label: fmtDate(k, { day: 'numeric', month: 'short' }) };
-  });
-  const worked = workMs(day, CATS, running);
-
-  // Countdown + milestones
-  const daysLeft = Math.max(0, TOTAL_DAYS - dn);
-  const pctDone = Math.round((dn / TOTAL_DAYS) * 100);
-  const milestone = inRange && dn % 25 === 0 ? `Milestone: day ${dn}` : inRange && dn === 1 ? 'Day one' : null;
-
-  // Best work day so far (only meaningful once there is something to beat)
-  const priorWork = Object.keys(days).filter((k) => k < today && inChallenge(k)).map((k) => workMs(days[k], CATS));
-  const bestBefore = priorWork.length ? Math.max(...priorWork) : 0;
-  const bestWorkDay = priorWork.length > 0 && worked > 0 && worked >= bestBefore;
-
-  // Tomorrow teaser: only slots you typed yourself (not the suggested defaults)
-  const tomorrow = addDays(today, 1);
-  const tomorrowItems = planFor(days[tomorrow]).filter((p) => p.id && p.title.trim()).slice(0, 3);
-
-  // Same weekday last week
-  const lwKey = addDays(today, -7);
-  const lw = days[lwKey] && inChallenge(lwKey) ? days[lwKey] : null;
-  const lwResult = lw ? dayResult(lw, settings, CATS, RULES) : null;
-  const lwWork = lw ? workMs(lw, CATS) : 0;
-  const lwWeight = lw && lw.weight !== '' && lw.weight != null ? +lw.weight : null;
-  const delta = (a, b, unit = '', digits = 0) => { const d = a - b; return d === 0 ? 'same' : `${d > 0 ? '+' : '−'}${Math.abs(d).toFixed(digits)}${unit}`; };
-  const trainedLabels = MUSCLES.filter((m) => (day.trained || []).includes(m.id)).map((m) => m.label);
+  const pace = paceInfo(journal, today, START);
+  const frame = fitnessFrame(journal, today);
+  const tot = totals(journal);
+  const t = journal.target;
+  const dates = Object.keys(journal.days).filter((d) => d <= today).sort();
+  const focus = journal.days[today] ? today : dates[dates.length - 1];
+  const d = focus ? journal.days[focus] : null;
+  const endKey = today > END ? today : END;
+  const kcal = d?.kcal || 0; const P = d?.p || 0; const Cb = d?.c || 0; const F = d?.f || 0;
+  const labels = MUSCLES.filter((m) => (d?.trained || []).includes(m.id)).map((m) => m.label);
+  const pacePerKm = d?.runKm && d?.runMin ? d.runMin / d.runKm : null;
+  const mmss = (m) => `${Math.floor(m)}:${String(Math.round((m % 1) * 60)).padStart(2, '0')}`;
+  const updated = published.status === 'ok' && published.data.updatedAt ? new Date(published.data.updatedAt) : new Date();
 
   return (
     <div className="sh">
       <header className="sh-top">
-        <span className="sh-eyebrow">{TOTAL_DAYS} Days Hard Challenge</span>
+        <span className="sh-eyebrow">Fitness journey</span>
         <a className="sh-chip" href={IG_URL} target="_blank" rel="noopener noreferrer">{HANDLE}</a>
       </header>
 
       <section className="sh-hero">
-        <h1>
-          {today < START ? <>Starts in {diffDays(START, today)}<span> day{diffDays(START, today) === 1 ? '' : 's'}</span></> : <>Day {dn}<span> / {TOTAL_DAYS}</span></>}
-        </h1>
-        <div className="sh-date">{fmtDate(today, { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-        <div className="sh-progress"><i style={{ width: `${today < START ? 0 : (dn / TOTAL_DAYS) * 100}%` }} /></div>
-        <ConsistencyFrame days={days} settings={settings} today={today} compact />
-        <div className="sh-count">
-          <span>{daysLeft === 0 ? 'Final day' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} to go`}</span>
-          <span>{pctDone}% done</span>
-          {milestone && <b>{milestone}</b>}
-        </div>
-        <blockquote>“{quote}”{author && <cite>{author}</cite>}</blockquote>
+        <h1>Losing {t.perWeek} kg<span> every week</span></h1>
+        <div className="sh-date">Updated {fmtDate(updated.toISOString().slice(0, 10), { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+        {preview && <div className="sh-preview">Preview: showing the data in this browser. Followers see it once you publish.</div>}
       </section>
 
       <section className="sh-card">
-        <h2>Today's session</h2>
-        <div className="sh-session">{day.workout?.trim() || (trainedLabels.length ? 'Training' : 'No session logged yet')}</div>
-        <BodyMap trained={day.trained || []} />
-        <div className="sh-tags">{trainedLabels.length ? trainedLabels.map((l) => <span key={l}>{l}</span>) : <em>Body parts hit show up here</em>}</div>
+        <h2>Weight</h2>
+        {pace ? (
+          <>
+            <div className="sh-weightrow">
+              <div className="sh-big">{pace.current.toFixed(1)}<small> kg</small></div>
+              <div className={`sh-pace ${pace.status === 'ahead' ? 'good' : pace.status === 'behind' ? 'warn' : ''}`}>
+                {pace.status === 'on pace' ? 'On target pace' : `${Math.abs(pace.diff).toFixed(2)} kg ${pace.status} of pace`}
+              </div>
+            </div>
+            <div className="sh-sub">{sgn(-pace.lost)} kg since {fmtDate(pace.startDate, { day: 'numeric', month: 'short' })}{pace.weekChange != null && <> · {sgn(pace.weekChange)} kg in the last 7 days (target −{t.perWeek})</>}</div>
+            {pace.points.length > 1 ? <PaceChart pace={pace} endKey={endKey} /> : <p className="sh-dim">The chart appears after a second weigh-in.</p>}
+          </>
+        ) : <p className="sh-dim">First weigh-in coming soon.</p>}
       </section>
-
-      <div className="sh-row">
-        <section className="sh-card">
-          <h2>Weight</h2>
-          <div className="sh-big">{wNow != null ? (+wNow).toFixed(1) : '—'}<small> kg</small></div>
-          <div className="sh-sub">{wDelta == null ? 'since day 1: log 2 weigh-ins' : `${wDelta > 0 ? '+' : ''}${wDelta.toFixed(1)} kg since day 1`}</div>
-        </section>
-        <section className="sh-card">
-          <h2>Calories</h2>
-          <div className="sh-big">{kcal || '—'}<small> / {settings.calorieTarget}</small></div>
-          <div className="sh-bar-track"><i style={{ width: `${Math.min(100, (kcal / settings.calorieTarget) * 100)}%` }} className={kcal > settings.calorieTarget ? 'over' : ''} /></div>
-          <div className="sh-sub">Protein {P || '—'} g · target {settings.proteinTarget}</div>
-        </section>
-      </div>
 
       <section className="sh-card">
-        <h2>Macros</h2>
-        <div className="sh-macros" aria-label="Macro split">
-          {macroKcal > 0 ? (
-            <>
-              <i style={{ flex: P * 4 }} className="p" /><i style={{ flex: Cb * 4 }} className="c" /><i style={{ flex: F * 9 }} className="f" />
-            </>
-          ) : <i style={{ flex: 1 }} className="none" />}
-        </div>
-        <div className="sh-macro-legend">
-          <span><b className="p" />Protein {P} g</span><span><b className="c" />Carbs {Cb} g</span><span><b className="f" />Fat {F} g</span>
-        </div>
-      </section>
-
-      <div className="sh-tiles">
-        <div><b>{result.done}<small>/{RULES.length}</small></b><span>score</span></div>
-        <div><b>{fmtHM(worked).replace(' ', '')}</b><span>worked</span></div>
-        <div><b>{current}</b><span>streak</span></div>
-        <div><b>{Math.round(finish * 100)}%</b><span>finish odds</span></div>
-      </div>
-
-      {bestWorkDay && <div className="sh-badge">Best work day so far · {fmtHM(worked)}</div>}
-
-      {lwResult && (
-        <section className="sh-card">
-          <h2>Vs last {fmtDate(lwKey, { weekday: 'long' })}</h2>
-          <div className="sh-vs">
-            <div><span>Work</span><b>{fmtHM(worked).replace(' ', '')}</b><em>{fmtHM(lwWork).replace(' ', '')} · {delta(worked / 3600000, lwWork / 3600000, 'h', 1)}</em></div>
-            <div><span>Score</span><b>{result.done}/{RULES.length}</b><em>{lwResult.done}/{RULES.length} · {delta(result.done, lwResult.done)}</em></div>
-            <div><span>Weight</span><b>{wNow != null ? (+wNow).toFixed(1) : '—'}</b><em>{lwWeight != null ? `${lwWeight.toFixed(1)}${wNow != null ? ` · ${delta(+wNow, lwWeight, ' kg', 1)}` : ''}` : '—'}</em></div>
+        <h2>{!focus ? 'Training' : focus === today ? 'Today' : `Last logged · ${fmtDate(focus)}`}</h2>
+        <div className="sh-two">
+          <div className={`sh-session ${d?.runDone ? 'done' : ''}`}>
+            <span className="sh-k">Morning run</span>
+            <b>{d?.runDone ? '✓ Done' : 'Not yet'}</b>
+            <em>{d?.runKm ? `${d.runKm} km` : '—'}{d?.runMin ? ` · ${d.runMin} min` : ''}{pacePerKm ? ` · ${mmss(pacePerKm)} /km` : ''}</em>
           </div>
-        </section>
-      )}
+          <div className={`sh-session ${d?.gymDone ? 'done' : ''}`}>
+            <span className="sh-k">Evening gym</span>
+            <b>{d?.gymDone ? '✓ Done' : 'Not yet'}</b>
+            <em>{d?.workout || (labels.length ? 'Training' : '—')}</em>
+          </div>
+        </div>
+        <BodyMap trained={d?.trained || []} />
+        <div className="sh-tags">{labels.length ? labels.map((l) => <span key={l}>{l}</span>) : <em>Body parts hit show up here</em>}</div>
+      </section>
 
       <section className="sh-card">
-        <h2>Hours worked · last {DAYS_SHOWN} days</h2>
-        <WorkBars items={series} targetH={settings.workTargetHours} />
+        <h2>Nutrition</h2>
+        <div className="sh-big">{kcal || '—'}<small>{t.kcal ? ` / ${t.kcal} kcal` : ' kcal'}</small></div>
+        {t.kcal > 0 && <div className="sh-bar-track"><i style={{ width: `${Math.min(100, (kcal / t.kcal) * 100)}%` }} className={kcal > t.kcal ? 'over' : ''} /></div>}
+        <div className="sh-macros" aria-label="Macro split">{P * 4 + Cb * 4 + F * 9 > 0 ? <><i style={{ flex: P * 4 }} className="p" /><i style={{ flex: Cb * 4 }} className="c" /><i style={{ flex: F * 9 }} className="f" /></> : <i style={{ flex: 1 }} className="none" />}</div>
+        <div className="sh-macro-legend"><span><b className="p" />Protein {P} g{t.protein ? ` / ${t.protein}` : ''}</span><span><b className="c" />Carbs {Cb} g</span><span><b className="f" />Fat {F} g</span></div>
       </section>
+
+      <ConsistencyFrame frame={frame} caption="run + gym days" maxLabel={2} compact />
+
+      <div className="sh-tiles three">
+        <div><b>{tot.runs}</b><span>morning runs</span></div>
+        <div><b>{tot.km}</b><span>km run</span></div>
+        <div><b>{tot.gyms}</b><span>gym sessions</span></div>
+      </div>
+
       <section className="sh-card">
-        <h2>Weight trend</h2>
-        <WeightLine items={series} />
+        <h2>Run distance · last 14 days</h2>
+        <RunBars days={journal.days} today={today} />
       </section>
 
       <section className="sh-cta">
-        <div>{today < START ? `Starts ${fmtDate(START, { weekday: 'long', day: 'numeric', month: 'long' })}.` : `Day ${dn} filled. Day ${dn + 1} tomorrow.`}</div>
-        {tomorrowItems.length > 0 && (
-          <ul className="sh-tmrw" aria-label="Tomorrow's plan">
-            {tomorrowItems.map((p) => <li key={p.start}><span>{hhmm(p.start)}</span>{p.title}</li>)}
-          </ul>
-        )}
+        <div>Follow the journey</div>
         <a className="sh-follow" href={IG_URL} target="_blank" rel="noopener noreferrer">Follow {HANDLE}</a>
-        <p>Every day the dashboard starts empty and I fill it in.</p>
+        <p>New update every day: weight, run, gym and food.</p>
       </section>
 
-      <footer className="sh-foot"><a href="/">open tracker</a></footer>
+      {hasLocal && <footer className="sh-foot"><a href="/app">open tracker</a></footer>}
     </div>
   );
 }

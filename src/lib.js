@@ -43,7 +43,7 @@ export const nowMinutes = (d = new Date()) => d.getHours() * 60 + d.getMinutes()
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
 // ---- per-day data -------------------------------------------------------
-export const emptyDay = () => ({ checks: {}, plan: [], sessions: [], notes: [], reflection: '', habits: {}, water: 0, ratings: {}, mit: '', weight: '', actuals: {}, trained: [], nutrition: {}, workout: '' });
+export const emptyDay = () => ({ checks: {}, plan: [], sessions: [], notes: [], reflection: '', habits: {}, water: 0, ratings: {}, mit: '', weight: '', actuals: {}, trained: [], nutrition: {}, workout: '', run: {} });
 export const planned = (day) => (day?.plan || []).filter((p) => p.title && p.title.trim());
 export const pad2 = (n) => String(n).padStart(2, '0');
 
@@ -60,7 +60,10 @@ export function dayResult(day, settings, CATS, RULES) {
   if (!day) return { done: 0, won: false, checks: {} };
   const checks = { ...day.checks };
   checks.work = workMs(day, CATS) >= settings.workTargetHours * 3600000;
-  if (!checks.gym) checks.gym = day.sessions.some((s) => s.cat === 'gym' && s.end - s.start >= 20 * 60000);
+  // Workouts count automatically: a long enough session, or the details you filled in.
+  const longSession = (cat, mins) => day.sessions.some((s) => s.cat === cat && s.end - s.start >= mins * 60000);
+  if (!checks.run) checks.run = longSession('run', 15) || +day.run?.km > 0 || +day.run?.min > 0;
+  if (!checks.gym) checks.gym = longSession('gym', 20) || (day.trained || []).length > 0;
   const done = RULES.filter((r) => checks[r.id]).length;
   return { done, won: done === RULES.length, checks };
 }
@@ -127,13 +130,10 @@ export function planFor(day) {
 // Intensity of a day's cell from how many rules were done (0 = none ... 4 = all, i.e. "consistent").
 export const levelOf = (done, n) => (done <= 0 ? 0 : done >= n ? 4 : done >= n - 1 ? 3 : done >= Math.ceil(n / 2) ? 2 : 1);
 
-// Weeks as columns, Monday-first weekdays as rows (like GitHub's contribution graph).
-export function frameData(days, settings, today, CATS, RULES) {
-  const n = RULES.length;
-  const cells = allDays().map((k) => {
-    const r = dayResult(days[k], settings, CATS, RULES);
-    return { date: k, n: dayNumber(k), done: r.done, won: r.won, level: levelOf(r.done, n), state: k > today ? 'future' : k === today ? 'today' : 'past' };
-  });
+// Builds the frame from one row per challenge day: { date, n, done, level (0-4), won }.
+// Weeks are columns and Monday-first weekdays are rows (like GitHub's contribution graph).
+export function buildFrame(rows, today) {
+  const cells = rows.map((r) => ({ ...r, state: r.date > today ? 'future' : r.date === today ? 'today' : 'past' }));
   const weeks = [];
   let col = null;
   for (const c of cells) {
@@ -143,19 +143,32 @@ export function frameData(days, settings, today, CATS, RULES) {
   }
   const months = [];
   weeks.forEach((w, i) => {
-    const first = w.find(Boolean);
-    const m = fromKey(first.date).toLocaleDateString('en-IN', { month: 'short' });
+    const m = fromKey(w.find(Boolean).date).toLocaleDateString('en-IN', { month: 'short' });
     if (!months.length || months[months.length - 1].label !== m) months.push({ col: i, label: m });
   });
+  // Streak = consecutive won days up to now; today is still open so it can extend but not break it.
+  let run = 0; let best = 0;
+  for (const c of cells) {
+    if (c.state === 'future') break;
+    if (c.won) { run += 1; best = Math.max(best, run); } else if (c.state === 'past') run = 0;
+  }
   const pastWon = cells.filter((c) => c.state === 'past' && c.won).length;
   const todayCell = cells.find((c) => c.state === 'today');
-  const { current, best } = streaks(days, today, settings, CATS, RULES);
   return {
     weeks, months, cells, pastWon, todayCell,
     consistent: pastWon + (todayCell?.won ? 1 : 0),
     total: cells.length,
     left: cells.filter((c) => c.state === 'future').length,
-    streak: current,
+    streak: run,
     best,
   };
+}
+
+// The tracker's frame: intensity = how many of your rules were done that day.
+export function frameData(days, settings, today, CATS, RULES) {
+  const n = RULES.length;
+  return buildFrame(allDays().map((k) => {
+    const r = dayResult(days[k], settings, CATS, RULES);
+    return { date: k, n: dayNumber(k), done: r.done, won: r.won, level: levelOf(r.done, n) };
+  }), today);
 }

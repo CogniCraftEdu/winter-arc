@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { CATS, HABITS, RULES, SETTINGS_DEFAULT } from '../config.js';
 import Odds from './Odds.jsx';
+import { downloadExcel } from '../exportExcel.js';
+import { getPublish, journalFromState, journalHash, publishJournal, savePublish } from '../publish.js';
 import { allDays, dayNumber, dayResult, fmtDate, fmtHM, streaks, workMs } from '../lib.js';
 
 export default function Journey({ state, actions, today, settings }) {
@@ -125,12 +127,20 @@ export default function Journey({ state, actions, today, settings }) {
         </form>
       </section>
 
+      <PublicPanel state={state} today={today} />
+
       <section className="card">
         <h2>Targets</h2>
         <div className="stack">
-          {[['workTargetHours', 'Work hours / day'], ['calorieTarget', 'Calorie target (kcal)'], ['proteinTarget', 'Protein target (g)']].map(([key, label]) => (
+          {[
+            ['targetLossPerWeek', 'Weight loss target (kg / week)', 0.05, 0, '0.05'],
+            ['startWeight', 'Start weight (kg), optional', 0.1, 20, '0.1'],
+            ['workTargetHours', 'Work hours / day', 1, 1, '1'],
+            ['calorieTarget', 'Calorie target (kcal)', 50, 500, '50'],
+            ['proteinTarget', 'Protein target (g)', 5, 20, '5'],
+          ].map(([key, label, , min, step]) => (
             <label key={key} className="field">{label}
-              <input type="number" min="1" value={settings[key]} onChange={(e) => actions.setSettings({ [key]: e.target.value === '' ? SETTINGS_DEFAULT[key] : Math.max(1, +e.target.value) })} />
+              <input type="number" min={min} step={step} inputMode="decimal" value={settings[key] ?? ''} onChange={(e) => actions.setSettings({ [key]: e.target.value === '' ? (key === 'startWeight' ? '' : SETTINGS_DEFAULT[key]) : +e.target.value })} />
             </label>
           ))}
         </div>
@@ -146,5 +156,46 @@ export default function Journey({ state, actions, today, settings }) {
         </div>
       </section>
     </div>
+  );
+}
+
+function PublicPanel({ state, today }) {
+  const [token, setToken] = useState(() => getPublish().token || '');
+  const [status, setStatus] = useState(() => getPublish().last || null);
+  const [busy, setBusy] = useState(false);
+  const url = `${window.location.origin}/`;
+  const auto = !!getPublish().token;
+
+  const publish = async () => {
+    if (!token.trim()) { setStatus({ ok: false, message: 'Enter your publish password first.' }); return; }
+    setBusy(true);
+    const journal = journalFromState(state, today);
+    const r = await publishJournal(journal, token.trim());
+    setBusy(false);
+    setStatus(r);
+    savePublish({ token: r.ok || r.status !== 401 ? token.trim() : '', ...(r.ok ? { hash: journalHash(journal) } : {}), last: r });
+  };
+  const copy = async () => { try { await navigator.clipboard.writeText(url); setStatus({ ok: true, message: 'Link copied. Paste it in your Instagram bio.' }); } catch { setStatus({ ok: false, message: `Copy this: ${url}` }); } };
+
+  return (
+    <section className="card wide">
+      <h2>Public page <span className="count">your Instagram bio link</span></h2>
+      <p className="dim">Followers see your fitness journey only: weight vs target, run, gym, body parts, calories. Notes, plans, work and habits are never published.</p>
+      <div className="row wrap" style={{ margin: '12px 0' }}>
+        <input readOnly value={url} className="grow" onFocus={(e) => e.target.select()} aria-label="Public link" />
+        <button className="btn primary" onClick={copy}>Copy link</button>
+        <a className="btn" style={{ textDecoration: 'none' }} href="/" target="_blank" rel="noopener">Open ↗</a>
+      </div>
+      <div className="row wrap">
+        <input type="password" className="grow" placeholder="Publish password (the ADMIN_TOKEN you set in Vercel)" value={token} onChange={(e) => setToken(e.target.value)} autoComplete="off" />
+        <button className="btn" disabled={busy} onClick={publish}>{busy ? 'Publishing…' : auto ? 'Publish now' : 'Save & publish'}</button>
+      </div>
+      {status && <p className={status.ok ? 'ok-text' : 'bad'} style={{ margin: '10px 0 0', fontSize: 13.5 }}>{status.message}</p>}
+      <p className="dim small">{auto ? 'Auto-publish is on: the page updates a few seconds after you change your weight, run, gym or nutrition.' : 'After the first successful publish, the page updates automatically whenever you change fitness data.'}</p>
+      <div className="row wrap" style={{ marginTop: 14 }}>
+        <button className="btn" onClick={() => downloadExcel(state, today)}>⬇ Download Excel (.xlsx)</button>
+        <span className="dim small">Fitness only. Upload it to Google Sheets if you want a shareable sheet link.</span>
+      </div>
+    </section>
   );
 }

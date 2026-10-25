@@ -121,9 +121,9 @@ export default function Reel(props) {
         </section>
 
         <section className="panel">
-          <h2>Public dashboard</h2>
-          <p className="dim">A clean page with today's day, quote, body parts, weight, calories, macros and charts, made for showing people.</p>
-          <a className="btn primary" style={{ display: 'inline-block', textDecoration: 'none', marginTop: 10 }} href="/show" target="_blank" rel="noopener">Open /show ↗</a>
+          <h2>Public fitness page</h2>
+          <p className="dim">Your Instagram bio link: weight vs your target pace, morning run, evening gym, body parts, calories and macros. Fitness only.</p>
+          <a className="btn primary" style={{ display: "inline-block", textDecoration: "none", marginTop: 10 }} href="/" target="_blank" rel="noopener">Open public page ↗</a>
         </section>
 
         <section className="panel">
