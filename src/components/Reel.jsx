@@ -122,7 +122,7 @@ export default function Reel(props) {
 
         <section className="panel">
           <h2>Public fitness page</h2>
-          <p className="dim">Your Instagram bio link: weight vs your target pace, morning run, evening gym, body parts, calories and macros. Fitness only.</p>
+          <p className="dim">Your Instagram bio link: weight vs your target pace, the daily checklist, calories and macros. It reads your daily sheet.</p>
           <a className="btn primary" style={{ display: "inline-block", textDecoration: "none", marginTop: 10 }} href="/" target="_blank" rel="noopener">Open public page ↗</a>
         </section>
 
@@ -133,8 +133,8 @@ export default function Reel(props) {
             <button className={mode === 'empty' ? 'on' : ''} onClick={() => setMode('empty')}>Empty (morning)</button>
           </div>
           <div className="row wrap" style={{ marginTop: 10 }}>
-            <button className="btn" onClick={() => downloadPng(data, 0, startHook, `winter-arc-day-${data.dn}-empty.png`)}>⬇ Empty PNG</button>
-            <button className="btn" onClick={() => downloadPng(data, 1, endHook, `winter-arc-day-${data.dn}-filled.png`)}>⬇ Filled PNG</button>
+            <button className="btn" onClick={() => downloadPng(data, 0, startHook, `fat-to-fit-day-${data.dn}-empty.png`)}>⬇ Empty PNG</button>
+            <button className="btn" onClick={() => downloadPng(data, 1, endHook, `fat-to-fit-day-${data.dn}-filled.png`)}>⬇ Filled PNG</button>
           </div>
           <p className="dim small">1080 × 1920, story size.</p>
         </section>

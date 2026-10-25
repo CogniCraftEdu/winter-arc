@@ -65,7 +65,7 @@ export function dayResult(day, settings, CATS, RULES) {
   // The run is done at the target distance; with no distance logged, a long enough Run session counts.
   const km = +day.run?.km;
   if (!checks.run) checks.run = km > 0 ? km >= settings.runTargetKm - 1e-9 : longSession('run', 15);
-  if (!checks.gym) checks.gym = longSession('gym', 20) || (day.trained || []).length > 0;
+  if (!checks.gym) checks.gym = longSession('gym', 20);
   if (day.rest) { checks.run = true; checks.gym = true; } // a planned rest day keeps the day whole
   const done = RULES.filter((r) => checks[r.id]).length;
   return { done, won: done === RULES.length, checks };

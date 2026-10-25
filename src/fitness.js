@@ -1,33 +1,7 @@
-import { CATS, RULES } from './config.js';
-import { addDays, allDays, buildFrame, dayNumber, dayResult, diffDays } from './lib.js';
-import { isProofUrl } from './proofs.js';
+import { addDays, allDays, buildFrame, dayNumber, diffDays } from './lib.js';
 
-// Everything the public page, the Excel export and the publish step need, in one plain shape:
-// { target: { perWeek, startWeight }, days: { 'YYYY-MM-DD': { w, runDone, runKm, runMin, gymDone, workout, trained, kcal, p, c, f } } }
-// Only fitness data goes in: no notes, plans, work hours, habits or quotes.
-
-const num = (v) => (v === '' || v == null || Number.isNaN(+v) ? null : +v);
-
-export function journalFromState(state, today) {
-  const { days, settings } = state;
-  const out = {};
-  for (const [date, d] of Object.entries(days || {})) {
-    if (date > today || !d) continue;
-    const r = dayResult(d, settings, CATS, RULES);
-    const nut = d.nutrition || {};
-    const row = {
-      w: num(d.weight),
-      runDone: !!r.checks.run, runKm: num(d.run?.km), runMin: num(d.run?.min),
-      gymDone: !!r.checks.gym, workout: (d.workout || '').trim(), trained: d.trained || [],
-      kcal: num(nut.kcal), p: num(nut.p), c: num(nut.c), f: num(nut.f),
-      proofs: Object.fromEntries(Object.entries(d.proofs || {}).filter(([, u]) => isProofUrl(u)).map(([k, u]) => [k, u.trim()])),
-      rest: !!d.rest, vlog: !!r.checks.vlog, vlogUrl: /^https:\/\/(www\.)?instagram\.com\//.test(d.vlogUrl || '') ? d.vlogUrl.trim() : '',
-    };
-    const any = row.w != null || row.runDone || row.gymDone || row.kcal != null || row.workout || row.trained.length || row.rest || row.vlog || Object.keys(row.proofs).length;
-    if (any) out[date] = row;
-  }
-  return { target: { perWeek: num(settings.targetLossPerWeek) ?? 0.75, startWeight: num(settings.startWeight), runKm: num(settings.runTargetKm) ?? 10, kcal: num(settings.calorieTarget), protein: num(settings.proteinTarget) }, days: out };
-}
+// Analytics over a "journal": { target, days: { 'YYYY-MM-DD': { w, runKm, runMin, runDone, gymDone, workout, trained, kcal, p, c, f, rest, vlog, vlogUrl } } }.
+// The journal is built from the daily sheet (see sheet.js).
 
 // Weight progress against the target pace (e.g. 0.75 kg lost per week).
 export function paceInfo(journal, today, startDateFallback) {
@@ -84,30 +58,4 @@ export function totals(journal, today = '9999-12-31') {
     vlogs: v.filter((d) => d.vlog).length,
     perfect: v.filter((d) => dayStatus(d, journal.target).perfect).length,
   };
-}
-
-// Default weekly buckets (Monday-first) from the first logged day: used by the Excel export.
-export function weekly(journal, today) {
-  const dates = Object.keys(journal.days).filter((d) => d <= today).sort();
-  if (!dates.length) return [];
-  const first = dates[0];
-  const rows = [];
-  for (let s = first, i = 1; s <= today; s = addDays(s, 7), i += 1) {
-    const e = addDays(s, 6);
-    const inWeek = dates.filter((d) => d >= s && d <= e).map((d) => journal.days[d]);
-    const ws = inWeek.map((d) => d.w).filter((x) => x != null);
-    const ks = inWeek.map((d) => d.kcal).filter((x) => x != null);
-    rows.push({
-      week: i, start: s, end: e,
-      avgW: ws.length ? ws.reduce((a, b) => a + b, 0) / ws.length : null,
-      lastW: ws.length ? ws[ws.length - 1] : null,
-      runs: inWeek.filter((d) => d.runDone && !d.rest).length,
-      km: inWeek.reduce((t, d) => t + (d.runKm || 0), 0),
-      gyms: inWeek.filter((d) => d.gymDone && !d.rest).length,
-      avgKcal: ks.length ? ks.reduce((a, b) => a + b, 0) / ks.length : null,
-      rests: inWeek.filter((d) => d.rest).length,
-      perfect: inWeek.filter((d) => dayStatus(d, journal.target).perfect).length,
-    });
-  }
-  return rows;
 }

@@ -1,3 +1,4 @@
+import { BRAND, TAGLINE } from '../config.js';
 import { fmtHM, levelOf } from '../lib.js';
 
 // The daily reel card: one 1080x1920 SVG drawn from `data`. `t` (0..1) is how filled-in the day looks:
@@ -39,9 +40,9 @@ export default function DayCard({ data, t, hook }) {
       <rect width={W} height="1920" fill={C.bg} />
 
       {/* header */}
-      {label(PAD, 100, `Winter Arc · ${data.range}`)}
-      {text({ x: PAD, y: 188, fontSize: 64, fontWeight: 700, letterSpacing: -2.5 }, `${data.total} Days Hard Challenge`)}
-      {text({ x: PAD, y: 238, fontSize: 28, fill: C.muted }, 'No excuses. 100% execution.')}
+      {label(PAD, 100, `${BRAND} · ${data.range}`)}
+      {text({ x: PAD, y: 188, fontSize: 64, fontWeight: 700, letterSpacing: -2.5 }, BRAND)}
+      {text({ x: PAD, y: 238, fontSize: 28, fill: C.muted }, TAGLINE)}
       <text x={PAD} y={372} fontFamily={FONT} fill={C.text} fontSize={data.before ? 104 : 132} fontWeight={300} letterSpacing={-5}>{data.dayText}{data.dayUnit && <tspan fontSize={42} fill={C.muted} letterSpacing={0} dx={14}>{data.dayUnit}</tspan>}</text>
       {text({ x: W - PAD, y: 372, fontSize: 34, fill: C.muted, textAnchor: 'end' }, data.dateLabel)}
       <rect x={PAD} y={404} width={INNER} height={6} rx={3} fill={C.line} />

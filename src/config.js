@@ -5,11 +5,7 @@ export const END = '2026-11-15'; // 21 days: 26 Oct -> 15 Nov
 export const SETTINGS_DEFAULT = {
   workTargetHours: 10,
   sleepTargetHours: 7,
-  targetLossPerWeek: 0.75, // kg per week
   runTargetKm: 10, // the morning run counts as done at this distance
-  startWeight: '', // optional; the first weight you log is used if empty
-  calorieTarget: 2200,
-  proteinTarget: 140,
   oddsP0: 92, // assumed daily win chance (%)
   oddsN0: 12, // how many days of evidence that assumption is worth
   oddsTarget: 90, // what counts as 'finished': this % of days won
@@ -25,8 +21,8 @@ export const RULES = [
   { id: 'sleep', label: '7 hours sleep', hint: '11 PM → 6 AM.' },
   { id: 'vlog', label: 'Daily vlog posted', hint: 'Posted between 10 and 11 PM.' },
   { id: 'work', label: '10 hours of work', hint: 'Counted automatically from the stopwatch.', auto: true },
-  { id: 'run', label: 'Morning run', hint: 'Done when you log your target distance (or a run session), or tick it.' },
-  { id: 'gym', label: 'Evening gym', hint: 'Counts if you log a Gym session or pick body parts, or tick it.' },
+  { id: 'run', label: 'Morning run', hint: 'Tick it when done, or log a Run session with the stopwatch.' },
+  { id: 'gym', label: 'Evening gym', hint: 'Tick it when done, or log a Gym session with the stopwatch.' },
 ];
 
 // The waking day (06:00-23:00) is planned in slots. A slot is identified by its start in
@@ -85,7 +81,18 @@ export const RATINGS = [
 ];
 
 
-// Public handle shown on the /show page and its follow button.
+// Brand + the public targets. Edit here; the public page and the daily sheet both read these.
+export const BRAND = 'Fat to Fit';
+export const TAGLINE = '21-day challenge · −0.75 kg every week';
+export const TARGETS = {
+  perWeek: 0.75, // kg lost per week
+  startWeight: null, // kg; leave null to use the first weight in the sheet
+  runKm: 10, // daily morning run
+  kcal: 2200, // daily calories (at or under)
+  protein: 140, // grams
+};
+
+// Public handle shown on the public page and its follow button.
 export const HANDLE = '@whey.to.lift';
 export const IG_URL = 'https://www.instagram.com/whey.to.lift/';
 

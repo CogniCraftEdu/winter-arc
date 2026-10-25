@@ -140,7 +140,7 @@ export function useStore() {
     exportData: () => JSON.stringify(state, null, 2),
     importData: (text) => {
       const parsed = JSON.parse(text);
-      if (!parsed || typeof parsed !== 'object' || !parsed.days) throw new Error('Not a Winter Arc backup');
+      if (!parsed || typeof parsed !== 'object' || !parsed.days) throw new Error('Not a Fat to Fit backup');
       setState(migrate({ ...fresh(), ...parsed, settings: { ...SETTINGS_DEFAULT, ...parsed.settings } }));
     },
   };

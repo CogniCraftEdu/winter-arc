@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CATS, END, RULES, START } from './config.js';
+import { BRAND, CATS, END, RULES, START, TAGLINE } from './config.js';
 import { useStore } from './store.js';
 import { useNow } from './hooks.js';
 import {
@@ -11,7 +11,6 @@ import Plan from './components/Plan.jsx';
 import Journey from './components/Journey.jsx';
 import Reel from './components/Reel.jsx';
 import ConsistencyFrame from './components/ConsistencyFrame.jsx';
-import { getPublish, journalFromState, journalHash, publishJournal, savePublish } from './publish.js';
 
 const TABS = [
   ['today', 'Today'],
@@ -32,21 +31,8 @@ export default function App() {
 
   // Running timer shows in the browser tab title.
   useEffect(() => {
-    document.title = timer ? `⏱ ${fmtClock(now - timer.startedAt)} · ${timer.label}` : `Winter Arc · ${TOTAL_DAYS} Days Hard Challenge`;
+    document.title = timer ? `⏱ ${fmtClock(now - timer.startedAt)} · ${timer.label}` : `${BRAND} · day tracker`;
   }, [timer, now]);
-
-  // Auto-publish the fitness journal a few seconds after it changes (only once you have saved a publish password).
-  useEffect(() => {
-    const { token, hash } = getPublish();
-    if (!token) return undefined;
-    const journal = journalFromState(state, today);
-    if (journalHash(journal) === hash) return undefined;
-    const id = setTimeout(async () => {
-      const r = await publishJournal(journal, token);
-      savePublish({ last: r, ...(r.ok ? { hash: journalHash(journal) } : r.status === 401 ? { token: '' } : {}) }); // a wrong password turns auto-publish off
-    }, 4000);
-    return () => clearTimeout(id);
-  }, [state.days, state.settings, today]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const day = { ...emptyDay(), ...(days[today] || {}) };
   const running = timer ? { id: 'running', label: timer.label, cat: timer.cat, start: timer.startedAt, end: now } : null;
@@ -63,11 +49,11 @@ export default function App() {
     <div className="app">
       <header className="top">
         <div className="brand">
-          <span className="eyebrow">Winter Arc</span>
+          <span className="eyebrow">{BRAND}</span>
           <span className="eyebrow dim">{fmtDate(START, { day: 'numeric', month: 'short' })} – {fmtDate(END, { day: 'numeric', month: 'short' })}</span>
         </div>
-        <h1 className="headline">{TOTAL_DAYS} Days Hard Challenge</h1>
-        <p className="tagline">No excuses. 100% execution.</p>
+        <h1 className="headline">{BRAND}</h1>
+        <p className="tagline">{TAGLINE}</p>
         <div className="hero-row">
           <div className="daycount">
             {before && <>Starts in {diffDays(START, today)}<span className="unit"> day{diffDays(START, today) === 1 ? '' : 's'}</span></>}

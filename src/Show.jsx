@@ -1,31 +1,38 @@
 import { useEffect, useState } from 'react';
-import { END, HANDLE, IG_URL, MUSCLES, START } from './config.js';
-import { dayStatus, fitnessFrame, journalFromState, paceInfo, totals } from './fitness.js';
+import { BRAND, END, HANDLE, IG_URL, MUSCLES, START, TARGETS } from './config.js';
+import { dayStatus, fitnessFrame, paceInfo, totals } from './fitness.js';
+import { journalFromCsv } from './sheet.js';
 import { addDays, diffDays, fmtDate, todayKey } from './lib.js';
-import { useSnapshot } from './store.js';
-import { isProofUrl } from './proofs.js';
 import BodyMap from './components/BodyMap.jsx';
 import ConsistencyFrame from './components/ConsistencyFrame.jsx';
 
-// A small tappable screenshot/photo. Only URLs from our own proofs/ storage are ever rendered.
-function Proof({ url, label }) {
-  if (!isProofUrl(url)) return null;
-  return <a className="sh-proof" href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${label}`}><img src={url} alt={label} loading="lazy" /><span>{label} ↗</span></a>;
-}
-
-const EMPTY = { target: { perWeek: 0.75, startWeight: null }, days: {} };
+const EMPTY = { target: { ...TARGETS }, days: {} };
 const sgn = (n, d = 1) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(d)}`;
 
-// Published data for everyone; falls back to this browser's own data (the owner previewing, or local dev).
-function usePublished() {
+// Sample data for previewing the page (add ?demo to the address). Never shown to visitors by default.
+function demoJournal(today) {
+  const days = {};
+  const start = new Date(`${START}T00:00:00`);
+  const n = Math.max(0, Math.min(20, Math.round((new Date(`${today}T00:00:00`) - start) / 86400000)));
+  for (let i = 0; i <= n; i += 1) {
+    const k = new Date(start.getTime() + i * 86400000); const key = `${k.getFullYear()}-${String(k.getMonth() + 1).padStart(2, '0')}-${String(k.getDate()).padStart(2, '0')}`;
+    const rest = i % 7 === 6;
+    days[key] = { w: +(80 - 0.11 * i - (i % 3) * 0.05).toFixed(1), runKm: rest ? null : 10 + (i % 3) * 0.4, runMin: rest ? null : 56, runDone: true, gymDone: true, workout: rest ? '' : ['Push', 'Pull', 'Legs'][i % 3], trained: rest ? [] : [['chest', 'shoulders', 'triceps'], ['back', 'biceps'], ['quads', 'hamstrings', 'glutes', 'calves']][i % 3], kcal: 1950 + (i % 4) * 60, p: 150, c: 200, f: 58, rest, vlog: i % 5 !== 4, vlogUrl: '' };
+  }
+  return { target: { ...TARGETS }, days };
+}
+
+// The public data comes from the daily sheet, relayed by /api/sheet.
+function useSheet() {
   const [s, setS] = useState({ status: 'loading' });
   useEffect(() => {
     let on = true;
-    const load = () => fetch('/api/public').then((r) => (r.status === 404 ? { empty: true } : r.ok ? r.json() : Promise.reject()))
-      .then((d) => on && setS(d.empty ? { status: 'empty' } : { status: 'ok', data: d }))
+    const load = () => fetch('/api/sheet')
+      .then(async (r) => { if (r.status === 501) return { status: 'unlinked' }; if (!r.ok) throw new Error(String(r.status)); return { status: 'ok', journal: journalFromCsv(await r.text()) }; })
+      .then((v) => on && setS(v))
       .catch(() => on && setS((p) => (p.status === 'ok' ? p : { status: 'error' })));
     load();
-    const id = setInterval(load, 60000);
+    const id = setInterval(load, 120000);
     return () => { on = false; clearInterval(id); };
   }, []);
   return s;
@@ -77,13 +84,12 @@ function RunBars({ days, today }) {
 
 export default function Show() {
   const today = todayKey();
-  const published = usePublished();
-  const local = journalFromState(useSnapshot(), today);
-  const hasLocal = Object.keys(local.days).length > 0;
-  const journal = published.status === 'ok' ? published.data : hasLocal ? local : EMPTY;
-  const preview = published.status !== 'ok' && hasLocal;
+  const sheet = useSheet();
+  const demo = new URLSearchParams(window.location.search).has('demo');
+  const journal = demo ? demoJournal(today) : sheet.status === 'ok' ? sheet.journal : EMPTY;
+  const hasLocal = (() => { try { return !!localStorage.getItem('winterarc:v1'); } catch { return false; } })(); // only the owner's browser has this
 
-  useEffect(() => { document.title = `Fitness Journey · ${HANDLE}`; }, []);
+  useEffect(() => { document.title = `${BRAND} · −${TARGETS.perWeek} kg a week · ${HANDLE}`; }, []);
 
   const pace = paceInfo(journal, today, START);
   const frame = fitnessFrame(journal, today);
@@ -93,26 +99,26 @@ export default function Show() {
   const focus = journal.days[today] ? today : dates[dates.length - 1];
   const d = focus ? journal.days[focus] : null;
   const st = d ? dayStatus(d, t) : null;
-  const scaleDate = [...dates].reverse().find((k) => isProofUrl(journal.days[k]?.proofs?.scale));
-  const scaleUrl = scaleDate ? journal.days[scaleDate].proofs.scale : null;
+  const lastDate = dates[dates.length - 1];
   const endKey = today > END ? today : END;
   const kcal = d?.kcal || 0; const P = d?.p || 0; const Cb = d?.c || 0; const F = d?.f || 0;
   const labels = MUSCLES.filter((m) => (d?.trained || []).includes(m.id)).map((m) => m.label);
   const pacePerKm = d?.runKm && d?.runMin ? d.runMin / d.runKm : null;
   const mmss = (m) => `${Math.floor(m)}:${String(Math.round((m % 1) * 60)).padStart(2, '0')}`;
-  const updated = published.status === 'ok' && published.data.updatedAt ? new Date(published.data.updatedAt) : new Date();
 
   return (
     <div className="sh">
       <header className="sh-top">
-        <span className="sh-eyebrow">Fitness journey</span>
+        <span className="sh-eyebrow">{TARGETS.perWeek > 0 ? `Losing ${TARGETS.perWeek} kg every week` : 'Fitness journey'}</span>
         <a className="sh-chip" href={IG_URL} target="_blank" rel="noopener noreferrer">{HANDLE}</a>
       </header>
 
       <section className="sh-hero">
-        <h1>Losing {t.perWeek} kg<span> every week</span></h1>
-        <div className="sh-date">Updated {fmtDate(updated.toISOString().slice(0, 10), { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-        {preview && <div className="sh-preview">Preview: showing the data in this browser. Followers see it once you publish.</div>}
+        <h1>Fat <span>to</span> Fit</h1>
+        <p className="sh-tag">A daily, public scoreboard: run, gym, calories, vlog, weight.</p>
+        <div className="sh-date">{lastDate ? `Last update · ${fmtDate(lastDate, { weekday: 'long', day: 'numeric', month: 'long' })}` : today < START ? `Starts ${fmtDate(START, { weekday: 'long', day: 'numeric', month: 'long' })}` : 'First update coming soon'}</div>
+        {demo && <div className="sh-preview">Sample data (preview). Real numbers come from your daily sheet.</div>}
+        {!demo && sheet.status === 'error' && <div className="sh-preview">Couldn't load the latest numbers. Refresh in a minute.</div>}
       </section>
 
       <section className="sh-card">
@@ -125,7 +131,6 @@ export default function Show() {
                 {pace.status === 'on pace' ? 'On target pace' : `${Math.abs(pace.diff).toFixed(2)} kg ${pace.status} of pace`}
               </div>
             </div>
-            {scaleUrl && <Proof url={scaleUrl} label={`Scale · ${fmtDate(scaleDate, { day: 'numeric', month: 'short' })}`} />}
             <div className="sh-sub">{sgn(-pace.lost)} kg since {fmtDate(pace.startDate, { day: 'numeric', month: 'short' })}{pace.weekChange != null && <> · {sgn(pace.weekChange)} kg in the last 7 days (target −{t.perWeek})</>}</div>
             {pace.points.length > 1 ? <PaceChart pace={pace} endKey={endKey} /> : <p className="sh-dim">The chart appears after a second weigh-in.</p>}
           </>
@@ -142,19 +147,16 @@ export default function Show() {
             <b>{d?.rest ? 'Rest' : st?.run ? '✓ Done' : d?.runKm ? 'Short of target' : 'Not yet'}</b>
             <em>{d?.runKm ? `${d.runKm} / ${t.runKm} km` : '—'}{d?.runMin ? ` · ${d.runMin} min` : ''}{pacePerKm ? ` · ${mmss(pacePerKm)} /km` : ''}</em>
             <i className="sh-mini"><u style={{ width: `${Math.min(100, ((d?.runKm || 0) / t.runKm) * 100)}%` }} /></i>
-            <Proof url={d?.proofs?.run} label="Strava" />
           </div>
           <div className={`it ${st?.gym ? 'done' : ''}`}>
             <span className="sh-k">Gym session</span>
             <b>{d?.rest ? 'Rest' : st?.gym ? '✓ Done' : 'Not yet'}</b>
             <em>{d?.workout || (labels.length ? 'Training' : '—')}</em>
-            <Proof url={d?.proofs?.gym} label="Gym photo" />
           </div>
           <div className={`it ${st?.cal ? 'done' : kcal > (t.kcal || Infinity) ? 'over' : ''}`}>
             <span className="sh-k">Calories</span>
             <b>{kcal ? (st?.cal ? '✓ In target' : 'Over target') : 'Not logged'}</b>
             <em>{kcal ? `${kcal}${t.kcal ? ` / ${t.kcal}` : ''} kcal` : '—'}</em>
-            <Proof url={d?.proofs?.cal} label="HealthifyMe" />
           </div>
           <div className={`it ${st?.vlog ? 'done' : ''}`}>
             <span className="sh-k">Daily vlog</span>
