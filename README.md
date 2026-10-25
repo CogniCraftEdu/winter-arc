@@ -28,11 +28,16 @@ A **perfect day** = run at target + gym + calories in target + vlog posted. Targ
 
 ### One-time setup
 1. Upload `fat-to-fit-daily-sheet.xlsx` to Google Drive → open with Google Sheets → **File → Save as Google Sheets**.
-2. **File → Share → Publish to web** → pick the **Daily log** tab → **Comma-separated values (.csv)** → **Publish** → copy the link.
-3. Vercel → Project → **Settings → Environment Variables** → add `SHEET_CSV_URL` = that link → **Redeploy**.
-4. Instagram bio link: your site's root address. Preview with sample data first: `…/?demo`.
+2. **Share → General access → Anyone with the link → Viewer** (never Editor, or anyone could change your public numbers).
+3. The site reads the sheet given in `api/sheet.js` (`DEFAULT_URL`, the sheet's `export?format=csv` address: first tab, "Daily log").
+   To use a different sheet, set `SHEET_CSV_URL` in Vercel (Settings → Environment Variables) and redeploy.
+4. Instagram bio link: your site's root address. Preview with sample data first: `…/?demo`. Check the live feed: `…/api/sheet` should show CSV text.
 
-Edits to the sheet appear on the page within a few minutes (Google refreshes published sheets about every 5 minutes).
+New colour-coded template later? In the same Google Sheet: **File → Import → Upload → Replace spreadsheet** keeps the link and sharing settings.
+
+Colours: green = target met, amber = close, red = missed, blue = rest day, a pale-green row = perfect day. Columns O–Q (target weight, vs target, score of 4) calculate themselves; the public page reads columns A–N only.
+
+Edits appear on the page within a minute or two.
 
 ## Rename the Vercel address
 Vercel → Project → **Settings → Domains** → add `fat-to-fit.vercel.app` (or any free name) → set it as primary.

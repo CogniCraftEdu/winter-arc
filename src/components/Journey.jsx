@@ -164,7 +164,7 @@ function SheetPanel() {
       <p className="dim">Fill one row a day in a Google Sheet (weight, run, gym, calories, vlog). The public page reads it and works out every number and chart. Nothing else to publish.</p>
       <div className="row wrap" style={{ margin: '12px 0' }}>
         <button className="btn primary" onClick={downloadDailySheet}>⬇ Download the daily sheet (.xlsx)</button>
-        <span className="dim small">Dates are pre-filled. Open it in Google Sheets, then File → Share → Publish to web → CSV.</span>
+        <span className="dim small">Dates are pre-filled and colours show hits and misses. Share the Google Sheet as “Anyone with the link: Viewer”.</span>
       </div>
       <h3>Your Instagram bio link</h3>
       <div className="row wrap">
