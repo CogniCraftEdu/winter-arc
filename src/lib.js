@@ -43,7 +43,7 @@ export const nowMinutes = (d = new Date()) => d.getHours() * 60 + d.getMinutes()
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
 // ---- per-day data -------------------------------------------------------
-export const emptyDay = () => ({ checks: {}, plan: [], sessions: [], notes: [], reflection: '', habits: {}, water: 0, ratings: {}, mit: '', weight: '', actuals: {}, trained: [], nutrition: {}, workout: '', run: {} });
+export const emptyDay = () => ({ checks: {}, plan: [], sessions: [], notes: [], reflection: '', habits: {}, water: 0, ratings: {}, mit: '', weight: '', actuals: {}, trained: [], nutrition: {}, workout: '', run: {}, rest: false, vlogUrl: '' });
 export const planned = (day) => (day?.plan || []).filter((p) => p.title && p.title.trim());
 export const pad2 = (n) => String(n).padStart(2, '0');
 
@@ -62,8 +62,11 @@ export function dayResult(day, settings, CATS, RULES) {
   checks.work = workMs(day, CATS) >= settings.workTargetHours * 3600000;
   // Workouts count automatically: a long enough session, or the details you filled in.
   const longSession = (cat, mins) => day.sessions.some((s) => s.cat === cat && s.end - s.start >= mins * 60000);
-  if (!checks.run) checks.run = longSession('run', 15) || +day.run?.km > 0 || +day.run?.min > 0;
+  // The run is done at the target distance; with no distance logged, a long enough Run session counts.
+  const km = +day.run?.km;
+  if (!checks.run) checks.run = km > 0 ? km >= settings.runTargetKm - 1e-9 : longSession('run', 15);
   if (!checks.gym) checks.gym = longSession('gym', 20) || (day.trained || []).length > 0;
+  if (day.rest) { checks.run = true; checks.gym = true; } // a planned rest day keeps the day whole
   const done = RULES.filter((r) => checks[r.id]).length;
   return { done, won: done === RULES.length, checks };
 }

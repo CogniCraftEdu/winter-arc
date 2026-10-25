@@ -5,6 +5,7 @@ import { timingSafeEqual } from 'node:crypto';
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_BYTES = 250_000;
 const MAX_DAYS = 400;
+const IG_URL = /^https:\/\/(www\.)?instagram\.com\/[A-Za-z0-9_\-./?=&%]{0,180}$/;
 const MUSCLES = ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms', 'abs', 'glutes', 'quads', 'hamstrings', 'calves'];
 
 const num = (v, lo, hi) => (v == null || v === '' || !Number.isFinite(+v) ? null : Math.min(hi, Math.max(lo, +v)));
@@ -21,12 +22,13 @@ export function sanitize(input) {
       gymDone: !!d.gymDone, workout: str(d.workout, 60),
       trained: Array.isArray(d.trained) ? d.trained.filter((m) => MUSCLES.includes(m)) : [],
       kcal: num(d.kcal, 0, 20000), p: num(d.p, 0, 2000), c: num(d.c, 0, 3000), f: num(d.f, 0, 2000),
+      rest: !!d.rest, vlog: !!d.vlog, vlogUrl: typeof d.vlogUrl === 'string' && IG_URL.test(d.vlogUrl.trim()) ? d.vlogUrl.trim() : '',
     };
   }
   const t = input.target || {};
   return {
     updatedAt: Date.now(),
-    target: { perWeek: num(t.perWeek, 0, 5) ?? 0.75, startWeight: num(t.startWeight, 20, 400), kcal: num(t.kcal, 0, 20000), protein: num(t.protein, 0, 2000) },
+    target: { perWeek: num(t.perWeek, 0, 5) ?? 0.75, startWeight: num(t.startWeight, 20, 400), runKm: num(t.runKm, 0, 200) ?? 10, kcal: num(t.kcal, 0, 20000), protein: num(t.protein, 0, 2000) },
     days,
   };
 }

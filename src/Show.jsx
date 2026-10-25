@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { END, HANDLE, IG_URL, MUSCLES, START } from './config.js';
-import { fitnessFrame, journalFromState, paceInfo, totals } from './fitness.js';
+import { dayStatus, fitnessFrame, journalFromState, paceInfo, totals } from './fitness.js';
 import { addDays, diffDays, fmtDate, todayKey } from './lib.js';
 import { useSnapshot } from './store.js';
 import BodyMap from './components/BodyMap.jsx';
@@ -80,11 +80,12 @@ export default function Show() {
 
   const pace = paceInfo(journal, today, START);
   const frame = fitnessFrame(journal, today);
-  const tot = totals(journal);
+  const tot = totals(journal, today);
   const t = journal.target;
   const dates = Object.keys(journal.days).filter((d) => d <= today).sort();
   const focus = journal.days[today] ? today : dates[dates.length - 1];
   const d = focus ? journal.days[focus] : null;
+  const st = d ? dayStatus(d, t) : null;
   const endKey = today > END ? today : END;
   const kcal = d?.kcal || 0; const P = d?.p || 0; const Cb = d?.c || 0; const F = d?.f || 0;
   const labels = MUSCLES.filter((m) => (d?.trained || []).includes(m.id)).map((m) => m.label);
@@ -122,21 +123,34 @@ export default function Show() {
       </section>
 
       <section className="sh-card">
-        <h2>{!focus ? 'Training' : focus === today ? 'Today' : `Last logged · ${fmtDate(focus)}`}</h2>
-        <div className="sh-two">
-          <div className={`sh-session ${d?.runDone ? 'done' : ''}`}>
-            <span className="sh-k">Morning run</span>
-            <b>{d?.runDone ? '✓ Done' : 'Not yet'}</b>
-            <em>{d?.runKm ? `${d.runKm} km` : '—'}{d?.runMin ? ` · ${d.runMin} min` : ''}{pacePerKm ? ` · ${mmss(pacePerKm)} /km` : ''}</em>
+        <h2>{!focus ? 'Daily checklist' : focus === today ? 'Today' : `Last logged · ${fmtDate(focus)}`}</h2>
+        {d?.rest && <div className="sh-rest">Rest day · recovery is part of the plan</div>}
+        {st?.perfect && !d?.rest && <div className="sh-perfect">Perfect day · all four done</div>}
+        <div className="sh-check">
+          <div className={`it ${st?.run ? 'done' : ''}`}>
+            <span className="sh-k">{t.runKm} km run</span>
+            <b>{d?.rest ? 'Rest' : st?.run ? '✓ Done' : d?.runKm ? 'Short of target' : 'Not yet'}</b>
+            <em>{d?.runKm ? `${d.runKm} / ${t.runKm} km` : '—'}{d?.runMin ? ` · ${d.runMin} min` : ''}{pacePerKm ? ` · ${mmss(pacePerKm)} /km` : ''}</em>
+            <i className="sh-mini"><u style={{ width: `${Math.min(100, ((d?.runKm || 0) / t.runKm) * 100)}%` }} /></i>
           </div>
-          <div className={`sh-session ${d?.gymDone ? 'done' : ''}`}>
-            <span className="sh-k">Evening gym</span>
-            <b>{d?.gymDone ? '✓ Done' : 'Not yet'}</b>
+          <div className={`it ${st?.gym ? 'done' : ''}`}>
+            <span className="sh-k">Gym session</span>
+            <b>{d?.rest ? 'Rest' : st?.gym ? '✓ Done' : 'Not yet'}</b>
             <em>{d?.workout || (labels.length ? 'Training' : '—')}</em>
           </div>
+          <div className={`it ${st?.cal ? 'done' : kcal > (t.kcal || Infinity) ? 'over' : ''}`}>
+            <span className="sh-k">Calories</span>
+            <b>{kcal ? (st?.cal ? '✓ In target' : 'Over target') : 'Not logged'}</b>
+            <em>{kcal ? `${kcal}${t.kcal ? ` / ${t.kcal}` : ''} kcal` : '—'}</em>
+          </div>
+          <div className={`it ${st?.vlog ? 'done' : ''}`}>
+            <span className="sh-k">Daily vlog</span>
+            <b>{st?.vlog ? '✓ Posted' : 'Not yet'}</b>
+            <em>{d?.vlogUrl ? <a href={d.vlogUrl} target="_blank" rel="noopener noreferrer">Watch it ↗</a> : '—'}</em>
+          </div>
         </div>
-        <BodyMap trained={d?.trained || []} />
-        <div className="sh-tags">{labels.length ? labels.map((l) => <span key={l}>{l}</span>) : <em>Body parts hit show up here</em>}</div>
+        {!d?.rest && <BodyMap trained={d?.trained || []} />}
+        {!d?.rest && <div className="sh-tags">{labels.length ? labels.map((l) => <span key={l}>{l}</span>) : <em>Body parts hit show up here</em>}</div>}
       </section>
 
       <section className="sh-card">
@@ -147,12 +161,15 @@ export default function Show() {
         <div className="sh-macro-legend"><span><b className="p" />Protein {P} g{t.protein ? ` / ${t.protein}` : ''}</span><span><b className="c" />Carbs {Cb} g</span><span><b className="f" />Fat {F} g</span></div>
       </section>
 
-      <ConsistencyFrame frame={frame} caption="run + gym days" maxLabel={2} compact />
+      <ConsistencyFrame frame={frame} caption="perfect days" maxLabel={4} compact />
 
-      <div className="sh-tiles three">
-        <div><b>{tot.runs}</b><span>morning runs</span></div>
+      <p className="sh-legend-note">A perfect day = {t.runKm} km run + gym + calories in target + vlog posted. A planned rest day waives the run and gym.</p>
+
+      <div className="sh-tiles">
+        <div><b>{tot.runs}</b><span>runs</span></div>
         <div><b>{tot.km}</b><span>km run</span></div>
-        <div><b>{tot.gyms}</b><span>gym sessions</span></div>
+        <div><b>{tot.gyms}</b><span>gym</span></div>
+        <div><b>{tot.vlogs}</b><span>vlogs</span></div>
       </div>
 
       <section className="sh-card">

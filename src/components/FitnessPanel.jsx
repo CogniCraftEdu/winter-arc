@@ -13,7 +13,11 @@ export default function FitnessPanel({ actions, today, day, settings }) {
   return (
     <section className="panel">
       <h2>Fitness <span className="count">feeds your public page</span></h2>
-      <h3 style={{ marginTop: 0 }}>Morning run</h3>
+      <label className="check" style={{ marginBottom: 6 }}>
+        <input type="checkbox" checked={!!day.rest} onChange={(e) => actions.setField(today, 'rest', e.target.checked)} />
+        <span>Rest day <span className="dim">(run and gym count as done; calories and vlog still matter)</span></span>
+      </label>
+      <h3>Morning run <span className="dim">target {settings.runTargetKm} km{+day.run?.km > 0 ? ` · ${(+day.run.km).toFixed(1)} logged` : ''}</span></h3>
       <div className="nut-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
         <label className="field">Distance (km)
           <input type="number" min="0" step="0.1" inputMode="decimal" value={day.run?.km ?? ''} onChange={(e) => setRun('km', e.target.value)} />
@@ -32,6 +36,11 @@ export default function FitnessPanel({ actions, today, day, settings }) {
           <button type="button" key={m.id} className={`pill ${trained.includes(m.id) ? 'on' : ''}`} onClick={() => toggle(m.id)}>{m.label}</button>
         ))}
       </div>
+      <h3>Daily vlog</h3>
+      <label className="field">Link to today's vlog (optional, Instagram only)
+        <input type="url" placeholder="https://www.instagram.com/reel/…" value={day.vlogUrl || ''} onChange={(e) => actions.setField(today, 'vlogUrl', e.target.value)} />
+      </label>
+      <div className="dim small" style={{ marginTop: 6 }}>Tick "Daily vlog posted" in the rules above when it's live.</div>
       <h3>Nutrition <span className="dim">target {settings.calorieTarget} kcal · {settings.proteinTarget} g protein</span></h3>
       <div className="nut-grid">
         {FIELDS.map(([k, label, unit]) => (

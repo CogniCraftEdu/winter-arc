@@ -135,6 +135,7 @@ export default function Journey({ state, actions, today, settings }) {
           {[
             ['targetLossPerWeek', 'Weight loss target (kg / week)', 0.05, 0, '0.05'],
             ['startWeight', 'Start weight (kg), optional', 0.1, 20, '0.1'],
+            ['runTargetKm', 'Daily run target (km)', 0.5, 1, '0.5'],
             ['workTargetHours', 'Work hours / day', 1, 1, '1'],
             ['calorieTarget', 'Calorie target (kcal)', 50, 500, '50'],
             ['proteinTarget', 'Protein target (g)', 5, 20, '5'],

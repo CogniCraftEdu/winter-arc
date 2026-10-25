@@ -5,7 +5,7 @@ React + Vite. Your data lives in your browser; only the fitness numbers you choo
 
 | Route | What it is |
 |---|---|
-| `/` | **Public fitness page** (put this in your Instagram bio). Weight vs target pace, morning run, evening gym, body parts, calories, macros, run + gym consistency frame. Fitness only, no "Day N". `/show` is an alias. |
+| `/` | **Public fitness page** (put this in your Instagram bio). Weight vs target pace, today's checklist (10 km run, gym, calories in target, vlog posted), body map, macros, and a GitHub-style frame of **perfect days**. Fitness only, no "Day N". `/show` is an alias. |
 | `/app` | **Private tracker.** Today, Plan, Reel, Journey. |
 | `/api/publish`, `/api/public` | Serverless functions that store and serve the published fitness numbers. |
 
@@ -20,7 +20,13 @@ Followers open the link on their own phones, so the page reads your published nu
    After that it auto-publishes a few seconds after you change weight, run, gym or nutrition.
 5. Instagram bio link: `https://YOUR-SITE.vercel.app/`
 
-Only these fields are ever published: weight, run done/km/min, gym done/workout name/body parts, calories and macros, your weekly loss target and calorie/protein targets. Notes, plans, work hours, habits and the stopwatch log are never sent (the server also drops anything else).
+Only these fields are ever published: weight, run done/km/min, gym done/workout name/body parts, calories and macros, rest day, vlog posted (+ an optional Instagram link), your weekly loss target and calorie/protein targets. Notes, plans, work hours, habits and the stopwatch log are never sent (the server also drops anything else).
+
+## Daily update (2 minutes, from your phone, at `/app`)
+
+Today tab → **Fitness** panel: morning weight, run km, workout + body parts, calories, vlog link (and tick "Daily vlog posted"). Use **Rest day** on a planned rest day: it waives the run and gym only; calories and vlog still count. The public page updates itself a few seconds later.
+A **perfect day** = run at your daily target + gym + calories logged and within target + vlog posted. Change the run target (default 10 km), weight target and calorie target in Journey → Targets.
+Your data lives in the browser you update from, so always update from the same phone.
 
 ## Excel
 

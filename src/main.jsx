@@ -9,4 +9,7 @@ import './show.css';
 const path = window.location.pathname.replace(/\/+$/, '') || '/';
 const isApp = path === '/app' || window.location.hash === '#/app';
 
+// The private tracker should never be indexed by search engines.
+if (isApp) document.head.insertAdjacentHTML('beforeend', '<meta name="robots" content="noindex,nofollow">');
+
 createRoot(document.getElementById('root')).render(isApp ? <App /> : <Show />);

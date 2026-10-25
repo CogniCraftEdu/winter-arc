@@ -6,6 +6,7 @@ export const SETTINGS_DEFAULT = {
   workTargetHours: 10,
   sleepTargetHours: 7,
   targetLossPerWeek: 0.75, // kg per week
+  runTargetKm: 10, // the morning run counts as done at this distance
   startWeight: '', // optional; the first weight you log is used if empty
   calorieTarget: 2200,
   proteinTarget: 140,
@@ -24,7 +25,7 @@ export const RULES = [
   { id: 'sleep', label: '7 hours sleep', hint: '11 PM → 6 AM.' },
   { id: 'vlog', label: 'Daily vlog posted', hint: 'Posted between 10 and 11 PM.' },
   { id: 'work', label: '10 hours of work', hint: 'Counted automatically from the stopwatch.', auto: true },
-  { id: 'run', label: 'Morning run', hint: 'Counts if you log a Run session or enter distance, or tick it.' },
+  { id: 'run', label: 'Morning run', hint: 'Done when you log your target distance (or a run session), or tick it.' },
   { id: 'gym', label: 'Evening gym', hint: 'Counts if you log a Gym session or pick body parts, or tick it.' },
 ];
 
