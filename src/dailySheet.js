@@ -4,28 +4,31 @@ import { buildXlsx } from './xlsx.js';
 
 // The one sheet you fill in each day. Dates are pre-filled (as text) so nothing is ever typed wrong.
 // Columns A-O are yours to fill; P-R calculate themselves; S-T are hidden helpers. The dashboard reads A-O only.
-export const SHEET_HEADERS = ['Date', 'Rest day', 'Weight (kg)', 'Sleep (hrs)', 'Run (km)', 'Run time (min)', 'Gym done', 'Workout', 'Body parts', 'Calories', 'Protein (g)', 'Carbs (g)', 'Fat (g)', 'Vlog posted', 'Vlog link'];
+export const SHEET_HEADERS = ['Date', 'Rest day', 'Weight (kg)', 'Sleep (hrs)', 'Steps', 'Notes', 'Gym done', 'Workout', 'Body parts', 'Calories', 'Protein (g)', 'Carbs (g)', 'Fat (g)', 'Vlog posted', 'Vlog link'];
 const AUTO_HEADERS = ['Target weight (auto)', 'Vs target (auto)', 'Score of 4 (auto)'];
 const HELPER_HEADERS = ['First weigh-in (helper)', 'Day number (helper)'];
 
 // dxf indexes (see xlsx.js): 0 green, 1 amber, 2 red, 3 blue, 4 pale green row, 5 today
 const G = 0; const A = 1; const R = 2; const B = 3; const ROW = 4; const TODAY = 5;
 
-// Sample week (19-25 Oct 2026) for previewing the dashboard. Replace with real numbers.
-// [rest, weight, sleep, runKm, runMin, gym, workout, parts, kcal, p, c, f, vlog]
+// Your 16-25 Oct 2026 history, used for the pre-filled file: [rest, weight, sleep, steps, notes, gym, workout, parts, kcal, p, c, f, vlog]
+// Sleep is left blank (not supplied). Weight is a straight line from 111.0 to 109.2 kg.
 const SAMPLE = {
-  '2026-10-19': ['', 84.0, 6.5, 10, 62, 'Yes', 'Push', 'chest, shoulders, triceps', 2150, 148, 215, 62, 'Yes'],
-  '2026-10-20': ['', 83.9, 7.2, 10.2, 61, 'Yes', 'Pull', 'back, biceps, forearms', 2080, 152, 200, 60, 'Yes'],
-  '2026-10-21': ['', 83.6, 7.0, 10, 60, 'Yes', 'Legs', 'quads, hamstrings, glutes, calves', 2190, 145, 230, 58, 'Yes'],
-  '2026-10-22': ['', 83.5, 5.8, 7.5, 47, 'Yes', 'Push', 'chest, shoulders, triceps', 2320, 140, 260, 70, 'No'],
-  '2026-10-23': ['', 83.3, 7.6, 10, 59, 'Yes', 'Pull', 'back, biceps, abs', 2100, 155, 205, 59, 'Yes'],
-  '2026-10-24': ['', 83.1, 7.4, 10.5, 60, 'Yes', 'Legs', 'quads, hamstrings, glutes, calves', 2170, 150, 220, 61, 'Yes'],
-  '2026-10-25': ['Yes', 83.2, 8.1, '', '', '', 'Rest', '', 2050, 145, 210, 55, 'Yes'],
+  '2026-10-16': ['', 111.0, '', 11000, '', 'Yes', 'Legs', 'quads, hamstrings, glutes, calves', 2400, 160, 260, 80, 'Yes'],
+  '2026-10-17': ['', 110.9, '', 11000, '', 'Yes', 'Push', 'chest, shoulders, triceps', 2400, 160, 260, 80, 'Yes'],
+  '2026-10-18': ['', 110.5, '', 11000, '', 'Yes', 'Pull', 'back, biceps, forearms', 2400, 160, 260, 80, 'Yes'],
+  '2026-10-19': ['', 110.4, '', 11000, '', 'Yes', 'Legs', 'quads, hamstrings, glutes, calves', 2400, 160, 260, 80, 'Yes'],
+  '2026-10-20': ['', 110.1, '', 11000, '', 'Yes', 'Push', 'chest, shoulders, triceps', 2400, 160, 260, 80, 'Yes'],
+  '2026-10-21': ['Yes', 110.0, '', , '', '', 'Rest', '', 2400, 160, 260, 80, 'Yes'],
+  '2026-10-22': ['', 109.7, '', 11000, '', 'Yes', 'Pull', 'back, biceps, forearms', 2400, 160, 260, 80, 'Yes'],
+  '2026-10-23': ['', 109.6, '', 11000, '', 'Yes', 'Legs', 'quads, hamstrings, glutes, calves', 2400, 160, 260, 80, 'Yes'],
+  '2026-10-24': ['', 109.4, '', 11000, '', 'Yes', 'Push', 'chest, shoulders, triceps', 2400, 160, 260, 80, 'Yes'],
+  '2026-10-25': ['Yes', 109.2, '', , '', '', 'Rest', '', 2400, 160, 260, 80, 'No'],
 };
 
 export function dailySheetBytes({ sample = false } = {}) {
   const last = SHEET_ROWS + 41; // formulas, colours and dropdowns keep working past the prefilled dates
-  const { perWeek, runKm, kcal, sleep } = TARGETS;
+  const { perWeek, steps, kcal, sleep } = TARGETS;
   const S = `$S$2:$S$${last}`; const C = `$C$2:$C$${last}`; const T = `$T$2:$T$${last}`;
   const startW = `SUMIF(${S},1,${C})`; const startD = `SUMIF(${S},1,${T})`;
 
@@ -40,7 +43,7 @@ export function dailySheetBytes({ sample = false } = {}) {
       // target weight: from your FIRST weigh-in, losing perWeek kg per week
       { f: `IF(OR(A${r}="",SUM(${S})=0),"",IF(T${r}<${startD},"",ROUND(${startW}-${perWeek}*(T${r}-${startD})/7,2)))`, s: 6 },
       { f: `IF(OR(C${r}="",P${r}=""),"",ROUND(C${r}-P${r},2))`, s: 6 },
-      { f: `IF(COUNTA(B${r}:O${r})=0,"",IF(OR(B${r}="Yes",AND(E${r}<>"",E${r}>=${runKm})),1,0)+IF(OR(B${r}="Yes",G${r}="Yes",H${r}<>""),1,0)+IF(AND(J${r}<>"",J${r}<=${kcal}),1,0)+IF(N${r}="Yes",1,0))`, s: 4 },
+      { f: `IF(COUNTA(B${r}:O${r})=0,"",IF(OR(B${r}="Yes",AND(E${r}<>"",E${r}>=${steps})),1,0)+IF(OR(B${r}="Yes",G${r}="Yes",H${r}<>""),1,0)+IF(AND(J${r}<>"",J${r}<=${kcal}),1,0)+IF(N${r}="Yes",1,0))`, s: 4 },
       { f: `IF(AND(ISNUMBER(C${r}),COUNT($C$2:C${r})=1),1,0)`, s: 4 },
       { f: `IF(A${r}="","",DATEVALUE(A${r}))`, s: 4 },
     ]);
@@ -51,7 +54,7 @@ export function dailySheetBytes({ sample = false } = {}) {
     { sqref: rng('A'), rules: [{ f: 'A2=TEXT(TODAY(),"yyyy-mm-dd")', dxf: TODAY }] },
     { sqref: rng('B'), rules: [{ f: 'B2="Yes"', dxf: B }] },
     { sqref: rng('D'), rules: [{ f: `AND(D2<>"",D2>=${sleep})`, dxf: G }, { f: `AND(D2<>"",D2>=6,D2<${sleep})`, dxf: A }, { f: 'AND(D2<>"",D2<6)', dxf: R }] },
-    { sqref: rng('E'), rules: [{ f: `AND(E2<>"",E2>=${runKm})`, dxf: G }, { f: `AND(E2<>"",E2>0,E2<${runKm})`, dxf: A }] },
+    { sqref: rng('E'), rules: [{ f: `AND(E2<>"",E2>=${steps})`, dxf: G }, { f: `AND(E2<>"",E2>0,E2<${steps})`, dxf: A }] },
     { sqref: rng('G'), rules: [{ f: 'G2="Yes"', dxf: G }] },
     { sqref: rng('J'), rules: [{ f: `AND(J2<>"",J2<=${kcal})`, dxf: G }, { f: `AND(J2<>"",J2>${kcal})`, dxf: R }] },
     { sqref: rng('N'), rules: [{ f: 'N2="Yes"', dxf: G }] },
@@ -64,14 +67,14 @@ export function dailySheetBytes({ sample = false } = {}) {
     [`${BRAND}: how this sheet works`],
     ['Fill ONE row per day in the "Daily log" tab. Columns A to O are yours; leave anything you did not do blank. Columns P to R calculate themselves (S and T are hidden helpers).'],
     ['The dashboard has no end date: it starts at the first row you fill and grows every day. Add past days (backfill) by filling the earlier dated rows.'],
-    ['Rest day, Gym done and Vlog posted have a Yes/No dropdown. A rest day counts the run and gym as done.'],
-    [`A perfect day = run at ${runKm} km or more + gym + calories at or under ${kcal} + vlog posted (score 4 of 4). Sleep is tracked separately (target ${sleep} hours).`],
+    ['Rest day, Gym done and Vlog posted have a Yes/No dropdown. A rest day counts the steps and gym as done.'],
+    [`A perfect day = ${steps.toLocaleString('en-IN')} steps or more + gym + calories at or under ${kcal} + vlog posted (score 4 of 4). Sleep is tracked separately (target ${sleep} hours).`],
     [`Weight target: lose ${perWeek} kg every week, counted from your FIRST weigh-in (whichever row it is in).`],
     ['Body parts: names separated by commas, e.g. chest, triceps (or "legs", "arms", "core"). Vlog link: an instagram.com reel link.'],
     ['Need more days? Copy the last dated row down; formulas, colours and dropdowns already cover 40 rows past the dates.'],
     [''],
     ['Colours'],
-    ['Green = target met. Amber = close (short run, sleep 6 to 7 hours, up to 0.3 kg behind pace). Red = missed (over calories, sleep under 6, more than 0.3 kg behind pace, score 2 or less).'],
+    ['Green = target met. Amber = close (fewer steps, sleep 6 to 7 hours, up to 0.3 kg behind pace). Red = missed (over calories, sleep under 6, more than 0.3 kg behind pace, score 2 or less).'],
     ['Blue = rest day. A fully green row is a perfect day. The blue bold date is today.'],
     [''],
     ['Sharing'],

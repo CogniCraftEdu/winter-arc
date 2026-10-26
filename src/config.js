@@ -87,14 +87,14 @@ export const TAGLINE = '21-day challenge · −0.75 kg every week';
 export const TARGETS = {
   perWeek: 0.75, // kg lost per week
   startWeight: null, // kg; leave null to use the first weight in the sheet
-  runKm: 10, // daily morning run
-  kcal: 2200, // daily calories (at or under)
-  protein: 140, // grams
+  steps: 10000, // daily steps
+  kcal: 2400, // daily calories (at or under)
+  protein: 150, // grams
   sleep: 7, // hours per night
 };
 
 // The daily sheet starts here (10 days back so you can backfill) and has room for this many dated rows.
-export const SHEET_FIRST_DATE = '2026-10-15';
+export const SHEET_FIRST_DATE = '2026-10-16';
 export const SHEET_ROWS = 120;
 
 // Public handle shown on the public page and its follow button.

@@ -1,6 +1,6 @@
 import { addDays, allDays, buildFrame, dayNumber, diffDays } from './lib.js';
 
-// Analytics over a "journal": { target, days: { 'YYYY-MM-DD': { w, runKm, runMin, runDone, gymDone, workout, trained, kcal, p, c, f, rest, vlog, vlogUrl } } }.
+// Analytics over a "journal": { target, days: { 'YYYY-MM-DD': { w, steps, stepsDone, gymDone, workout, trained, kcal, p, c, f, rest, vlog, vlogUrl } } }.
 // The journal is built from the daily sheet (see sheet.js).
 
 // Weight progress against the target pace (e.g. 0.75 kg lost per week).
@@ -28,16 +28,16 @@ export function paceInfo(journal, today, startDateFallback) {
   };
 }
 
-// The four daily commitments shown publicly: the run, the gym, calories logged within target, the vlog posted.
-// A planned rest day waives the run and gym.
+// The four daily commitments shown publicly: the steps goal, the gym, calories logged within target, the vlog posted.
+// A planned rest day waives the steps goal and gym.
 export function dayStatus(d, target) {
   const rest = !!d?.rest;
-  const run = rest || !!d?.runDone;
+  const steps = rest || !!d?.stepsDone;
   const gym = rest || !!d?.gymDone;
   const cal = d?.kcal != null && (!target?.kcal || d.kcal <= target.kcal);
   const vlog = !!d?.vlog;
-  const n = [run, gym, cal, vlog].filter(Boolean).length;
-  return { run, gym, cal, vlog, n, rest, perfect: n === 4 };
+  const n = [steps, gym, cal, vlog].filter(Boolean).length;
+  return { steps, gym, cal, vlog, n, rest, perfect: n === 4 };
 }
 
 // Frame for the fitness page: a day lights up by how many of the four commitments were met; all four = a perfect (darkest) day.
@@ -51,8 +51,8 @@ export function fitnessFrame(journal, today) {
 export function totals(journal, today = '9999-12-31') {
   const v = Object.entries(journal.days).filter(([d]) => d <= today).map(([, x]) => x);
   return {
-    runs: v.filter((d) => d.runDone && !d.rest).length,
-    km: +v.reduce((t, d) => t + (d.runKm || 0), 0).toFixed(1),
+    stepDays: v.filter((d) => d.stepsDone && !d.rest).length,
+    steps: v.reduce((t, d) => t + (d.steps || 0), 0),
     gyms: v.filter((d) => d.gymDone && !d.rest).length,
     rests: v.filter((d) => d.rest).length,
     vlogs: v.filter((d) => d.vlog).length,

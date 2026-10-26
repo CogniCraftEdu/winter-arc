@@ -10,7 +10,6 @@ import { Donut, HBars, Legend, Ring, XYChart } from './components/charts.jsx';
 const EMPTY = { target: { ...TARGETS }, days: {} };
 const sgn = (n, d = 1) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(d)}`;
 const short = (k) => fmtDate(k, { day: 'numeric', month: 'short' });
-const mmss = (m) => `${Math.floor(m)}:${String(Math.round((m % 1) * 60)).padStart(2, '0')}`;
 const RANGES = [[14, '14 days'], [30, '30 days'], [90, '90 days'], [null, 'All time']];
 
 // Sample data for previewing the page (add ?demo to the address). Never shown to visitors by default.
@@ -20,7 +19,7 @@ function demoJournal(today) {
     const k = addDays(today, i - 41); const rest = i % 7 === 6;
     days[k] = {
       w: i % 5 === 3 ? null : +(84 - 0.1 * i - (i % 3) * 0.06).toFixed(1), sleep: +(6 + ((i * 7) % 25) / 10).toFixed(1),
-      runKm: rest ? null : i % 11 === 5 ? 6.2 : 10 + (i % 3) * 0.4, runMin: rest ? null : 58 - (i % 4), runDone: rest ? false : i % 11 !== 5, gymDone: true,
+      steps: rest ? null : i % 11 === 5 ? 6200 : 10000 + (i % 4) * 650, stepsDone: rest ? false : i % 11 !== 5, gymDone: true,
       workout: rest ? '' : ['Push', 'Pull', 'Legs'][i % 3], trained: rest ? [] : [['chest', 'shoulders', 'triceps'], ['back', 'biceps'], ['quads', 'hamstrings', 'glutes', 'calves']][i % 3],
       kcal: 1900 + ((i * 53) % 420), p: 150, c: 200, f: 58, rest, vlog: i % 5 !== 4, vlogUrl: '',
     };
@@ -73,7 +72,7 @@ function DayStrip({ days, selected, today, onSelect }) {
               <span>{d.k === today ? 'Today' : fmtDate(d.k, { weekday: 'short' })}</span>
               <b>{fromKey(d.k).getDate()}</b>
               <em>{fmtDate(d.k, { month: 'short' })}</em>
-              <i className="pips" aria-hidden="true">{[s?.run, s?.gym, s?.cal, s?.vlog].map((v, i) => <u key={i} className={v ? 'on' : ''} />)}</i>
+              <i className="pips" aria-hidden="true">{[s?.steps, s?.gym, s?.cal, s?.vlog].map((v, i) => <u key={i} className={v ? 'on' : ''} />)}</i>
             </button>
           );
         })}
@@ -86,7 +85,6 @@ function DayStrip({ days, selected, today, onSelect }) {
 function DayPanel({ d, t, prevW, today }) {
   const row = d.row; const s = d.st;
   const labels = MUSCLES.filter((m) => (row?.trained || []).includes(m.id)).map((m) => m.label);
-  const pace = row?.runKm && row?.runMin ? row.runMin / row.runKm : null;
   const macroKcal = row ? (row.p || 0) * 4 + (row.c || 0) * 4 + (row.f || 0) * 9 : 0;
   const head = d.k === today ? 'Today' : fmtDate(d.k, { weekday: 'long' });
   return (
@@ -97,7 +95,7 @@ function DayPanel({ d, t, prevW, today }) {
           <div className="dtiles">
             <div className="dt"><span className="k">Weight</span><b>{row.w != null ? row.w.toFixed(1) : '–'}<small> kg</small></b><em>{row.w != null && prevW != null ? `${sgn(row.w - prevW)} kg vs last weigh-in` : row.w != null ? 'First weigh-in' : 'Not weighed'}</em></div>
             <div className={`dt ${row.sleep != null && row.sleep >= t.sleep ? 'done' : ''}`}><span className="k">Sleep</span><b>{row.sleep != null ? row.sleep : '–'}<small> h</small></b><em>{row.sleep == null ? 'Not logged' : row.sleep >= t.sleep ? `Target ${t.sleep} h met` : `${(t.sleep - row.sleep).toFixed(1)} h under target`}</em></div>
-            <div className={`dt ${s.run ? 'done' : ''}`}><span className="k">Morning run</span><b>{s.rest ? 'Rest' : row.runKm ? row.runKm : '–'}{!s.rest && row.runKm ? <small> km</small> : null}</b><em>{s.rest ? 'Planned recovery' : row.runKm ? `${s.run ? '✓ target met' : `short of ${t.runKm} km`}${row.runMin ? ` · ${row.runMin} min` : ''}${pace ? ` · ${mmss(pace)} /km` : ''}` : 'No run logged'}</em></div>
+            <div className={`dt ${s.steps ? 'done' : ''}`}><span className="k">Steps</span><b>{s.rest ? 'Rest' : row.steps ? row.steps.toLocaleString('en-IN') : '–'}</b><em>{s.rest ? 'Planned recovery' : row.steps ? (s.steps ? `✓ ${t.steps.toLocaleString('en-IN')} goal met` : `${(t.steps - row.steps).toLocaleString('en-IN')} short of ${t.steps.toLocaleString('en-IN')}`) : 'No steps logged'}</em></div>
             <div className={`dt ${s.gym ? 'done' : ''}`}><span className="k">Evening gym</span><b>{s.rest ? 'Rest' : s.gym ? '✓' : '–'}</b><em>{row.workout || (s.gym && !s.rest ? 'Trained' : s.rest ? 'Planned recovery' : 'No session')}</em></div>
             <div className={`dt ${s.cal ? 'done' : row.kcal > (t.kcal || Infinity) ? 'over' : ''}`}><span className="k">Calories</span><b>{row.kcal ?? '–'}<small> kcal</small></b><em>{row.kcal == null ? 'Not logged' : t.kcal ? `${s.cal ? '✓ within' : 'over'} ${t.kcal}` : ''}</em></div>
             <div className={`dt ${s.vlog ? 'done' : ''}`}><span className="k">Vlog</span><b>{s.vlog ? '✓' : '–'}</b><em>{row.vlogUrl ? <a href={row.vlogUrl} target="_blank" rel="noopener noreferrer">Watch it ↗</a> : s.vlog ? 'Posted' : 'Not posted'}</em></div>
@@ -156,6 +154,7 @@ export default function Dashboard() {
 
   const xs = view.map((d) => ({ k: d.k, label: short(d.k), full: fmtDate(d.k, { weekday: 'short', day: 'numeric', month: 'short' }) }));
   const rangeLabel = range ? `Last ${range} days` : 'All time';
+  const wkSteps = useMemo(() => { const m = new Map(); for (const d of days) { if (d.row?.steps == null) continue; const st = addDays(d.k, -((fromKey(d.k).getDay() + 6) % 7)); const e = m.get(st) || { start: st, total: 0, n: 0 }; e.total += d.row.steps; e.n += 1; m.set(st, e); } const all = [...m.values()]; return range ? all.slice(-Math.max(4, Math.ceil(range / 7))) : all; }, [days, range]);
   const wk = range ? weeks.slice(-Math.max(4, Math.ceil(range / 7))) : weeks;
   const first = days[0]?.k;
   const ago = sheet.at ? Math.max(0, Math.round((Date.now() - sheet.at) / 60000)) : null;
@@ -188,7 +187,7 @@ export default function Dashboard() {
             <Kpi k="Weekly trend" big={ov?.trend ? sgn(ov.trend.perWeek, 2) : '–'} unit="kg/wk" tone={trendTone} note={ov?.trend ? `Target −${t.perWeek} · 14-day trend` : 'Needs two weeks of weigh-ins'} />
             <Kpi k="Perfect days" big={agAll.perfect} unit={`of ${agAll.tracked}`} note={`Streak ${streak.cur} · best ${streak.best}`} />
             <Kpi k="Avg sleep" big={a7.sleep.avg ?? '–'} unit="h" tone={a7.sleep.avg != null && a7.sleep.avg >= t.sleep ? 'good' : 'warn'} note={`Last 7 days · target ${t.sleep} h`} />
-            <Kpi k="Distance run" big={agAll.run.km} unit="km" note={`${agAll.run.count} runs${agAll.run.pace ? ` · ${mmss(agAll.run.pace)} /km` : ''}`} />
+            <Kpi k="Steps" big={agAll.steps.avg != null ? agAll.steps.avg.toLocaleString('en-IN') : '–'} unit="/ day" note={`${agAll.steps.total.toLocaleString('en-IN')} total · goal ${t.steps.toLocaleString('en-IN')}`} />
           </div>
 
           <div className="grid">
@@ -211,11 +210,11 @@ export default function Dashboard() {
           </div>
 
           {frame && <Card title="Consistency" sub="Every square is a day. The darker, the more of the four daily goals were met."><div className="framewrap"><ConsistencyFrame frame={frame} caption="perfect days" maxLabel={4} compact hideLeft /></div>
-            <p className="rule">Perfect day = {t.runKm} km morning run + evening gym + calories under {t.kcal} + vlog posted. A planned rest day waives the run and gym.</p></Card>}
+            <p className="rule">Perfect day = {t.steps.toLocaleString('en-IN')} steps + evening gym + calories under {t.kcal} + vlog posted. A planned rest day waives the steps goal and gym.</p></Card>}
 
           <Card title={`Daily habits · ${rangeLabel.toLowerCase()}`} sub={`Share of ${ag.tracked} logged days where each goal was met`}>
             <div className="rings">
-              <Ring pct={ag.hit.run} label="Morning run" sub={`${t.runKm} km`} />
+              <Ring pct={ag.hit.steps} label="Steps" sub={`${t.steps / 1000}k a day`} />
               <Ring pct={ag.hit.gym} label="Evening gym" sub="session done" />
               <Ring pct={ag.hit.cal} label="Calories" sub={`under ${t.kcal}`} />
               <Ring pct={ag.hit.vlog} label="Vlog" sub="posted" />
@@ -262,16 +261,17 @@ export default function Dashboard() {
           </div>
 
           <div className="grid">
-            <div className="c6"><Card title="Running" sub={`Distance per day · ${ag.run.count} runs · ${ag.run.km} km${ag.run.best ? ` · best ${ag.run.best} km` : ''}`}>
-              <XYChart xs={xs} label="Run distance per day" height={210} fmt={(v) => v} onPick={setSel} selected={selKey}
-                bars={[{ name: 'Distance (km)', values: view.map((d) => d.row?.runKm ?? null), color: 'var(--c1)', colorAt: (i) => (view[i].row?.runKm >= t.runKm ? 'var(--c1)' : 'color-mix(in srgb, var(--c1) 50%, transparent)') }]}
-                guide={{ v: t.runKm, name: `Target ${t.runKm} km` }}
-                tip={(i) => [{ name: 'Distance', text: view[i].row?.runKm != null ? `${view[i].row.runKm} km` : 'no run' }, view[i].row?.runKm && view[i].row?.runMin && { name: 'Pace', text: `${mmss(view[i].row.runMin / view[i].row.runKm)} /km` }].filter(Boolean)} />
+            <div className="c6"><Card title="Steps" sub={`Per day · average ${ag.steps.avg != null ? ag.steps.avg.toLocaleString('en-IN') : '–'}${ag.steps.best ? ` · best ${ag.steps.best.toLocaleString('en-IN')}` : ''}`}>
+              <XYChart xs={xs} label="Steps per day" height={210} fmt={(v) => (v >= 1000 ? `${v / 1000}k` : v)} onPick={setSel} selected={selKey}
+                bars={[{ name: 'Steps', values: view.map((d) => d.row?.steps ?? null), color: 'var(--c1)', colorAt: (i) => (view[i].row?.steps >= t.steps ? 'var(--c1)' : 'color-mix(in srgb, var(--c1) 50%, transparent)') }]}
+                guide={{ v: t.steps, name: `Goal ${t.steps.toLocaleString('en-IN')}` }}
+                tip={(i) => [{ name: 'Steps', text: view[i].row?.steps != null ? view[i].row.steps.toLocaleString('en-IN') : view[i].row?.rest ? 'rest day' : 'not logged' }]} />
+              <p className="rule">Lighter bars = under the goal.</p>
             </Card></div>
-            <div className="c6"><Card title="Pace" sub="Minutes per kilometre on run days; lower is faster">
-              <XYChart xs={xs} label="Running pace per kilometre" height={210} fmt={(v) => mmss(v)} onPick={setSel} selected={selKey}
-                lines={[{ name: 'Pace (min/km)', values: view.map((d) => (d.row?.runKm && d.row?.runMin ? +(d.row.runMin / d.row.runKm).toFixed(2) : null)), color: 'var(--c1)', dots: true }]}
-                tip={(i) => [{ name: 'Pace', text: view[i].row?.runKm && view[i].row?.runMin ? `${mmss(view[i].row.runMin / view[i].row.runKm)} /km` : 'no timed run' }]} />
+            <div className="c6"><Card title="Weekly steps" sub="Total steps per Monday–Sunday week">
+              <XYChart xs={wkSteps.map((w) => ({ k: w.start, label: short(w.start), full: `Week of ${short(w.start)}` }))} label="Steps per week" height={210} fmt={(v) => (v >= 1000 ? `${v / 1000}k` : v)}
+                bars={[{ name: 'Steps', values: wkSteps.map((w) => w.total), color: 'var(--c1)' }]}
+                tip={(i) => [{ name: 'Total', text: wkSteps[i].total.toLocaleString('en-IN') }, { name: 'Days logged', text: String(wkSteps[i].n) }]} />
             </Card></div>
           </div>
 
@@ -279,21 +279,21 @@ export default function Dashboard() {
             <div className="c5"><Card title="What I track" sub="Everything below is filled in daily from one sheet">
               <ul className="track">
                 <li><b>Weight</b>morning weigh-in, 7-day average, pace vs −{t.perWeek} kg/week</li>
-                <li><b>Morning run</b>{t.runKm} km a day: distance, time and pace</li>
+                <li><b>Steps</b>{t.steps.toLocaleString('en-IN')} a day, weekly totals</li>
                 <li><b>Evening gym</b>session and the body parts trained</li>
                 <li><b>Calories & macros</b>under {t.kcal} kcal, protein / carbs / fat</li>
                 <li><b>Sleep</b>hours per night, target {t.sleep} h</li>
                 <li><b>Daily vlog</b>posted on Instagram, with the link</li>
-                <li><b>Rest days</b>planned recovery waives the run and gym</li>
+                <li><b>Rest days</b>planned recovery waives the steps goal and gym</li>
               </ul>
             </Card></div>
             <div className="c7"><Card title="Journal" sub="Every day, newest first. Tap a row to open it above.">
               <div className="tablewrap"><table>
-                <thead><tr><th>Date</th><th>Weight</th><th>Sleep</th><th>Run</th><th>Gym</th><th>kcal</th><th>Vlog</th><th>Score</th></tr></thead>
+                <thead><tr><th>Date</th><th>Weight</th><th>Sleep</th><th>Steps</th><th>Gym</th><th>kcal</th><th>Vlog</th><th>Score</th></tr></thead>
                 <tbody>{[...days].reverse().map((d) => { const r = d.row; const s = d.st; return (
                   <tr key={d.k} className={d.k === selKey ? 'sel' : ''} onClick={() => { setSel(d.k); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
                     <td>{fmtDate(d.k, { weekday: 'short', day: 'numeric', month: 'short' })}</td><td>{r?.w != null ? r.w.toFixed(1) : '–'}</td><td>{r?.sleep ?? '–'}</td>
-                    <td>{s?.rest ? 'Rest' : r?.runKm ?? '–'}</td><td>{s ? (s.rest ? 'Rest' : s.gym ? '✓' : '–') : '–'}</td><td>{r?.kcal ?? '–'}</td><td>{s ? (s.vlog ? '✓' : '–') : '–'}</td>
+                    <td>{s?.rest ? 'Rest' : r?.steps != null ? r.steps.toLocaleString('en-IN') : '–'}</td><td>{s ? (s.rest ? 'Rest' : s.gym ? '✓' : '–') : '–'}</td><td>{r?.kcal ?? '–'}</td><td>{s ? (s.vlog ? '✓' : '–') : '–'}</td>
                     <td>{s ? <span className={`sc ${s.perfect ? 'ok' : s.rest ? 'rest' : ''}`}>{s.rest ? 'Rest' : `${s.n}/4`}</span> : '–'}</td>
                   </tr>); })}</tbody>
               </table></div>

@@ -46,6 +46,8 @@ const num = (v) => {
   const n = parseFloat(s);
   return Number.isFinite(n) ? n : null;
 };
+// "11k", "11,000" and "11000" all mean eleven thousand steps
+const stepCount = (v) => { const s = String(v ?? '').trim(); const n = num(/k$/i.test(s) ? s.slice(0, -1) : s); return n == null ? null : /k$/i.test(s) ? Math.round(n * 1000) : n; };
 const yes = (v) => /^(y|yes|true|1|done|✓|✔|x)$/i.test(String(v ?? '').trim());
 
 const PART_ALIASES = {
@@ -58,7 +60,7 @@ const known = new Set(MUSCLES.map((m) => m.id));
 export const parseParts = (v) => [...new Set(String(v ?? '').toLowerCase().split(/[,;/|&+]+|\band\b/).map((x) => x.trim()).flatMap((x) => PART_ALIASES[x] || (known.has(x) ? [x] : [])))];
 
 // Column order used when the header row can't be recognised (matches the template).
-const DEFAULT_COLS = { date: 0, rest: 1, w: 2, sleep: 3, km: 4, min: 5, gym: 6, workout: 7, parts: 8, kcal: 9, p: 10, c: 11, f: 12, vlog: 13, vlogUrl: 14 };
+const DEFAULT_COLS = { date: 0, rest: 1, w: 2, sleep: 3, steps: 4, gym: 6, workout: 7, parts: 8, kcal: 9, p: 10, c: 11, f: 12, vlog: 13, vlogUrl: 14 };
 
 export function findColumns(header) {
   const h = header.map((x) => String(x ?? '').toLowerCase().replace(/\s+/g, ' ').trim());
@@ -68,8 +70,7 @@ export function findColumns(header) {
     rest: find((x) => /\brest\b/.test(x)),
     w: find((x) => /weight/.test(x) && !/target/.test(x)),
     sleep: find((x) => /sleep/.test(x)),
-    km: find((x) => /\brun\b/.test(x) && /(km|dist)/.test(x)),
-    min: find((x) => /\brun\b/.test(x) && /(min|time)/.test(x)),
+    steps: find((x) => /steps?\b/.test(x)),
     gym: find((x) => /\bgym\b/.test(x) && !/photo/.test(x)),
     workout: find((x) => /workout/.test(x)),
     parts: find((x) => /(body|muscle)/.test(x)),
@@ -99,18 +100,18 @@ export function journalFromRows(rows, targets = TARGETS) {
     const date = parseDate(cell('date'));
     if (!date) { report.skipped += 1; if (String(cell('date')).trim()) report.badDates.push(String(cell('date')).trim()); continue; }
     const rest = yes(cell('rest'));
-    const km = num(cell('km'));
+    const steps = stepCount(cell('steps'));
     const workout = String(cell('workout') ?? '').trim().slice(0, 60);
     const link = String(cell('vlogUrl') ?? '').trim();
     const row = {
-      w: num(cell('w')), sleep: num(cell('sleep')), runKm: km, runMin: num(cell('min')),
-      runDone: rest || (km != null && km >= targets.runKm - 1e-9),
+      w: num(cell('w')), sleep: num(cell('sleep')), steps,
+      stepsDone: rest || (steps != null && steps >= targets.steps),
       gymDone: rest || yes(cell('gym')) || workout !== '',
       workout, trained: parseParts(cell('parts')),
       kcal: num(cell('kcal')), p: num(cell('p')), c: num(cell('c')), f: num(cell('f')),
       rest, vlog: yes(cell('vlog')), vlogUrl: IG.test(link) ? link.slice(0, 200) : '',
     };
-    const any = row.w != null || row.sleep != null || km != null || row.kcal != null || rest || row.vlog || workout || row.trained.length || yes(cell('gym'));
+    const any = row.w != null || row.sleep != null || steps != null || row.kcal != null || rest || row.vlog || workout || row.trained.length || yes(cell('gym'));
     if (!any) continue; // a prefilled date with nothing entered yet
     days[date] = row; report.used += 1;
   }

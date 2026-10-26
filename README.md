@@ -1,6 +1,6 @@
 # Fat to Fit
 
-A public daily scoreboard for losing **0.75 kg every week**: a 10 km morning run, evening gym, calories in target and a daily vlog.
+A public daily scoreboard for losing **0.75 kg every week**: 10,000 steps a day, evening gym, calories in target and a daily vlog.
 The public page is a **Weight Loss Journal** with no day limit: it runs from the first logged day to today and grows every day.
 
 | Route | What it is |
@@ -20,12 +20,12 @@ One row per day, in a Google Sheet. The public page works out every number, char
 | Rest day / Gym done / Vlog posted | Yes / No dropdowns. A rest day counts the run and gym as done. |
 | Weight (kg) | Morning weigh-in. The first one is your start weight. |
 | Sleep (h) | Hours slept the night before (target 7 h). |
-| Run (km), Run time (min) | The run counts as done at the target distance (10 km). |
+| Steps, Notes | Steps count as done at the target (10,000; `11k` and `11,000` both work). Notes is free text and is not shown. |
 | Workout, Body parts | e.g. `Leg day`, `quads, glutes, calves` (also `legs`, `arms`, `core`). |
 | Calories, Protein, Carbs, Fat | Day totals. Calories count when at or under target. |
 | Vlog link | The Instagram reel link (instagram.com only). |
 
-A **perfect day** = run at target + gym + calories in target + vlog posted. Targets live in `src/config.js` (`TARGETS`).
+A **perfect day** = steps at target + gym + calories in target + vlog posted. Targets live in `src/config.js` (`TARGETS`).
 
 ### One-time setup
 1. Upload `fat-to-fit-daily-sheet.xlsx` to Google Drive → open with Google Sheets → **File → Save as Google Sheets**.
@@ -38,7 +38,7 @@ New colour-coded template later? In the same Google Sheet: **File → Import →
 
 Colours: green = target met, amber = close, red = missed, blue = rest day, a pale-green row = perfect day. Columns O–Q (target weight, vs target, score of 4) calculate themselves; the public page reads columns A–N only.
 
-Edits appear on the page within a minute or two. The template pre-lists dates from 15 Oct 2026, so past days can be back-filled by typing into those rows.
+Edits appear on the page within a minute or two. The template pre-lists dates from 16 Oct 2026, so past days can be back-filled by typing into those rows.
 
 ## Rename the Vercel address
 Vercel → Project → **Settings → Domains** → add `fat-to-fit.vercel.app` (or any free name) → set it as primary.

@@ -3,7 +3,7 @@ import { addDays, diffDays, fromKey } from './lib.js';
 import { dayStatus } from './fitness.js';
 
 // Everything the dashboard shows is computed here from a journal (see sheet.js):
-// { target: { perWeek, startWeight, runKm, kcal, protein, sleep }, days: { 'YYYY-MM-DD': row } }.
+// { target: { perWeek, startWeight, steps, kcal, protein, sleep }, days: { 'YYYY-MM-DD': row } }.
 // There is no fixed length: the range runs from the first logged day to today and grows every day.
 
 const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
@@ -96,7 +96,7 @@ export function aggregates(days, journal, n = null) {
   const pct = (c, of) => (of ? Math.round((c / of) * 100) : null);
   const T = tracked.length;
   const hit = {
-    run: pct(tracked.filter((d) => d.st.run).length, T), gym: pct(tracked.filter((d) => d.st.gym).length, T),
+    steps: pct(tracked.filter((d) => d.st.steps).length, T), gym: pct(tracked.filter((d) => d.st.gym).length, T),
     cal: pct(tracked.filter((d) => d.st.cal).length, T), vlog: pct(tracked.filter((d) => d.st.vlog).length, T),
     sleep: pct(rows.filter((r) => r.sleep != null && r.sleep >= t.sleep).length, rows.filter((r) => r.sleep != null).length),
   };
@@ -104,10 +104,9 @@ export function aggregates(days, journal, n = null) {
   const sl = rows.map((r) => r.sleep).filter((x) => x != null);
   const sleep = { avg: r1(avg(sl)), n: sl.length, buckets: { under6: sl.filter((x) => x < 6).length, s6to7: sl.filter((x) => x >= 6 && x < 7).length, s7to8: sl.filter((x) => x >= 7 && x < 8).length, over8: sl.filter((x) => x >= 8).length } };
 
-  const runs = rows.filter((r) => r.runKm != null && r.runKm > 0);
-  const km = runs.reduce((a, r) => a + r.runKm, 0);
-  const timed = runs.filter((r) => r.runMin != null && r.runMin > 0);
-  const run = { count: runs.length, km: r1(km), avgKm: runs.length ? r1(km / runs.length) : null, best: runs.length ? Math.max(...runs.map((r) => r.runKm)) : null, pace: timed.length ? r2(timed.reduce((a, r) => a + r.runMin, 0) / timed.reduce((a, r) => a + r.runKm, 0)) : null };
+  const stepRows = rows.filter((r) => r.steps != null && r.steps > 0);
+  const total = stepRows.reduce((x, r) => x + r.steps, 0);
+  const steps = { count: stepRows.length, total, avg: stepRows.length ? Math.round(total / stepRows.length) : null, best: stepRows.length ? Math.max(...stepRows.map((r) => r.steps)) : null };
 
   const kc = rows.map((r) => r.kcal).filter((x) => x != null);
   const calories = { avg: kc.length ? Math.round(avg(kc)) : null, n: kc.length, overDays: kc.filter((x) => t.kcal && x > t.kcal).length };
@@ -116,7 +115,7 @@ export function aggregates(days, journal, n = null) {
   for (const r of rows) for (const p of r.trained || []) if (p in parts) parts[p] += 1;
 
   return {
-    days: slice.length, tracked: T, outcome, hit, sleep, run, calories, parts,
+    days: slice.length, tracked: T, outcome, hit, sleep, steps, calories, parts,
     macros: { grams, share: mk ? { p: macroKcal.p / mk, c: macroKcal.c / mk, f: macroKcal.f / mk } : null, n: withMacros.length },
     gyms: rows.filter((r) => r.gymDone && !r.rest).length, rests: rows.filter((r) => r.rest).length, vlogs: rows.filter((r) => r.vlog).length,
     perfect: outcome.perfect + tracked.filter((d) => d.st.perfect && d.st.rest).length,
