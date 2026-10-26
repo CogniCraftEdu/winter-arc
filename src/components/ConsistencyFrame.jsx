@@ -4,7 +4,7 @@ import { fmtDate } from '../lib.js';
 const ROW_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
 
 // GitHub-style contribution frame: one square per challenge day, darker = more rules done.
-export default function ConsistencyFrame({ frame: f, caption = 'days consistent', maxLabel = RULES.length, compact = false }) {
+export default function ConsistencyFrame({ frame: f, caption = 'days consistent', maxLabel = RULES.length, compact = false, hideLeft = false }) {
   return (
     <section className={`frame ${compact ? 'compact' : ''}`} aria-label={`Consistency: ${f.consistent} of ${f.total} days`}>
       <div className="frame-graph">
@@ -34,7 +34,7 @@ export default function ConsistencyFrame({ frame: f, caption = 'days consistent'
       <div className="frame-stats">
         <div className="frame-big"><b>{f.consistent}</b><span> / {f.total}</span></div>
         <div className="frame-cap">{caption}</div>
-        <div className="frame-sub">Streak {f.streak} · Best {f.best} · {f.left} to go</div>
+        <div className="frame-sub">Streak {f.streak} · Best {f.best}{hideLeft ? '' : ` · ${f.left} to go`}</div>
         <div className="frame-legend" aria-hidden="true"><span>Less</span><i className="fc lv0" /><i className="fc lv1" /><i className="fc lv2" /><i className="fc lv3" /><i className="fc lv4" /><span>More</span></div>
       </div>
     </section>

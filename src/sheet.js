@@ -58,7 +58,7 @@ const known = new Set(MUSCLES.map((m) => m.id));
 export const parseParts = (v) => [...new Set(String(v ?? '').toLowerCase().split(/[,;/|&+]+|\band\b/).map((x) => x.trim()).flatMap((x) => PART_ALIASES[x] || (known.has(x) ? [x] : [])))];
 
 // Column order used when the header row can't be recognised (matches the template).
-const DEFAULT_COLS = { date: 0, rest: 1, w: 2, km: 3, min: 4, gym: 5, workout: 6, parts: 7, kcal: 8, p: 9, c: 10, f: 11, vlog: 12, vlogUrl: 13 };
+const DEFAULT_COLS = { date: 0, rest: 1, w: 2, sleep: 3, km: 4, min: 5, gym: 6, workout: 7, parts: 8, kcal: 9, p: 10, c: 11, f: 12, vlog: 13, vlogUrl: 14 };
 
 export function findColumns(header) {
   const h = header.map((x) => String(x ?? '').toLowerCase().replace(/\s+/g, ' ').trim());
@@ -67,6 +67,7 @@ export function findColumns(header) {
     date: find((x) => /\bdate\b/.test(x)),
     rest: find((x) => /\brest\b/.test(x)),
     w: find((x) => /weight/.test(x) && !/target/.test(x)),
+    sleep: find((x) => /sleep/.test(x)),
     km: find((x) => /\brun\b/.test(x) && /(km|dist)/.test(x)),
     min: find((x) => /\brun\b/.test(x) && /(min|time)/.test(x)),
     gym: find((x) => /\bgym\b/.test(x) && !/photo/.test(x)),
@@ -102,14 +103,14 @@ export function journalFromRows(rows, targets = TARGETS) {
     const workout = String(cell('workout') ?? '').trim().slice(0, 60);
     const link = String(cell('vlogUrl') ?? '').trim();
     const row = {
-      w: num(cell('w')), runKm: km, runMin: num(cell('min')),
+      w: num(cell('w')), sleep: num(cell('sleep')), runKm: km, runMin: num(cell('min')),
       runDone: rest || (km != null && km >= targets.runKm - 1e-9),
       gymDone: rest || yes(cell('gym')) || workout !== '',
       workout, trained: parseParts(cell('parts')),
       kcal: num(cell('kcal')), p: num(cell('p')), c: num(cell('c')), f: num(cell('f')),
       rest, vlog: yes(cell('vlog')), vlogUrl: IG.test(link) ? link.slice(0, 200) : '',
     };
-    const any = row.w != null || km != null || row.kcal != null || rest || row.vlog || workout || row.trained.length || yes(cell('gym'));
+    const any = row.w != null || row.sleep != null || km != null || row.kcal != null || rest || row.vlog || workout || row.trained.length || yes(cell('gym'));
     if (!any) continue; // a prefilled date with nothing entered yet
     days[date] = row; report.used += 1;
   }

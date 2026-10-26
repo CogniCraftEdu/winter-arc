@@ -1,11 +1,11 @@
 # Fat to Fit
 
 A public daily scoreboard for losing **0.75 kg every week**: a 10 km morning run, evening gym, calories in target and a daily vlog.
-21-day challenge: Day 1 = Mon 26 Oct 2026 → Sun 15 Nov (change `START` / `END` in `src/config.js`).
+The public page is a **Weight Loss Journal** with no day limit: it runs from the first logged day to today and grows every day.
 
 | Route | What it is |
 |---|---|
-| `/` | **Public page** (your Instagram bio link). Weight vs target pace, today's checklist, body map, macros, a GitHub-style frame of perfect days, run chart. Reads the daily sheet. |
+| `/` | **Public dashboard** (your Instagram bio link). Scrollable day strip, KPIs, weight / weekly-change / sleep / calories / run / pace charts, macro, sleep and outcome donuts, habit rings, body-part counts, GitHub-style consistency frame, full journal table. Reads the daily sheet every minute. |
 | `/app` | Private day tracker (stopwatch, plan, notes, reel card). Not linked from the public page, not indexed. |
 | `/api/sheet` | Tiny relay that serves your published Google Sheet (CSV) to the public page. |
 | `/fat-to-fit-daily-sheet.xlsx` | The blank daily sheet. |
@@ -19,6 +19,7 @@ One row per day, in a Google Sheet. The public page works out every number, char
 | Date | Pre-filled. Never type it. |
 | Rest day / Gym done / Vlog posted | Yes / No dropdowns. A rest day counts the run and gym as done. |
 | Weight (kg) | Morning weigh-in. The first one is your start weight. |
+| Sleep (h) | Hours slept the night before (target 7 h). |
 | Run (km), Run time (min) | The run counts as done at the target distance (10 km). |
 | Workout, Body parts | e.g. `Leg day`, `quads, glutes, calves` (also `legs`, `arms`, `core`). |
 | Calories, Protein, Carbs, Fat | Day totals. Calories count when at or under target. |
@@ -37,7 +38,7 @@ New colour-coded template later? In the same Google Sheet: **File → Import →
 
 Colours: green = target met, amber = close, red = missed, blue = rest day, a pale-green row = perfect day. Columns O–Q (target weight, vs target, score of 4) calculate themselves; the public page reads columns A–N only.
 
-Edits appear on the page within a minute or two.
+Edits appear on the page within a minute or two. The template pre-lists dates from 16 Oct 2026, so past days can be back-filled by typing into those rows.
 
 ## Rename the Vercel address
 Vercel → Project → **Settings → Domains** → add `fat-to-fit.vercel.app` (or any free name) → set it as primary.

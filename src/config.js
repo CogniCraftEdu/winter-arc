@@ -90,7 +90,12 @@ export const TARGETS = {
   runKm: 10, // daily morning run
   kcal: 2200, // daily calories (at or under)
   protein: 140, // grams
+  sleep: 7, // hours per night
 };
+
+// The daily sheet starts here (10 days back so you can backfill) and has room for this many dated rows.
+export const SHEET_FIRST_DATE = '2026-10-16';
+export const SHEET_ROWS = 120;
 
 // Public handle shown on the public page and its follow button.
 export const HANDLE = '@whey.to.lift';

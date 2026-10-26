@@ -38,7 +38,7 @@ function cfXml(cf) {
 
 function sheetXml(rows, widths = [], validations = [], opts = {}) {
   const { headStyles = [], freezeCols = 0, cf = [] } = opts;
-  const cols = widths.length ? `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols>` : '';
+  const cols = widths.length ? `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${typeof w === 'object' ? w.w : w}" customWidth="1"${typeof w === 'object' && w.hidden ? ' hidden="1"' : ''}/>`).join('')}</cols>` : '';
   const body = rows.map((row, r) => `<row r="${r + 1}">${row.map((v, c) => {
     const ref = `${col(c)}${r + 1}`;
     if (v == null || v === '') return '';
