@@ -94,7 +94,7 @@ export const TARGETS = {
 };
 
 // The daily sheet starts here (10 days back so you can backfill) and has room for this many dated rows.
-export const SHEET_FIRST_DATE = '2026-10-16';
+export const SHEET_FIRST_DATE = '2026-10-15';
 export const SHEET_ROWS = 120;
 
 // Public handle shown on the public page and its follow button.

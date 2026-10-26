@@ -38,7 +38,7 @@ New colour-coded template later? In the same Google Sheet: **File → Import →
 
 Colours: green = target met, amber = close, red = missed, blue = rest day, a pale-green row = perfect day. Columns O–Q (target weight, vs target, score of 4) calculate themselves; the public page reads columns A–N only.
 
-Edits appear on the page within a minute or two. The template pre-lists dates from 16 Oct 2026, so past days can be back-filled by typing into those rows.
+Edits appear on the page within a minute or two. The template pre-lists dates from 15 Oct 2026, so past days can be back-filled by typing into those rows.
 
 ## Rename the Vercel address
 Vercel → Project → **Settings → Domains** → add `fat-to-fit.vercel.app` (or any free name) → set it as primary.
