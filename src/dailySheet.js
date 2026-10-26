@@ -11,7 +11,19 @@ const HELPER_HEADERS = ['First weigh-in (helper)', 'Day number (helper)'];
 // dxf indexes (see xlsx.js): 0 green, 1 amber, 2 red, 3 blue, 4 pale green row, 5 today
 const G = 0; const A = 1; const R = 2; const B = 3; const ROW = 4; const TODAY = 5;
 
-export function dailySheetBytes() {
+// Sample week (19-25 Oct 2026) for previewing the dashboard. Replace with real numbers.
+// [rest, weight, sleep, runKm, runMin, gym, workout, parts, kcal, p, c, f, vlog]
+const SAMPLE = {
+  '2026-10-19': ['', 84.0, 6.5, 10, 62, 'Yes', 'Push', 'chest, shoulders, triceps', 2150, 148, 215, 62, 'Yes'],
+  '2026-10-20': ['', 83.9, 7.2, 10.2, 61, 'Yes', 'Pull', 'back, biceps, forearms', 2080, 152, 200, 60, 'Yes'],
+  '2026-10-21': ['', 83.6, 7.0, 10, 60, 'Yes', 'Legs', 'quads, hamstrings, glutes, calves', 2190, 145, 230, 58, 'Yes'],
+  '2026-10-22': ['', 83.5, 5.8, 7.5, 47, 'Yes', 'Push', 'chest, shoulders, triceps', 2320, 140, 260, 70, 'No'],
+  '2026-10-23': ['', 83.3, 7.6, 10, 59, 'Yes', 'Pull', 'back, biceps, abs', 2100, 155, 205, 59, 'Yes'],
+  '2026-10-24': ['', 83.1, 7.4, 10.5, 60, 'Yes', 'Legs', 'quads, hamstrings, glutes, calves', 2170, 150, 220, 61, 'Yes'],
+  '2026-10-25': ['Yes', 83.2, 8.1, '', '', '', 'Rest', '', 2050, 145, 210, 55, 'Yes'],
+};
+
+export function dailySheetBytes({ sample = false } = {}) {
   const last = SHEET_ROWS + 41; // formulas, colours and dropdowns keep working past the prefilled dates
   const { perWeek, runKm, kcal, sleep } = TARGETS;
   const S = `$S$2:$S$${last}`; const C = `$C$2:$C$${last}`; const T = `$T$2:$T$${last}`;
@@ -20,7 +32,11 @@ export function dailySheetBytes() {
   const log = [[...SHEET_HEADERS, ...AUTO_HEADERS, ...HELPER_HEADERS]];
   for (let r = 2; r <= last; r += 1) {
     log.push([
-      r - 2 < SHEET_ROWS ? addDays(SHEET_FIRST_DATE, r - 2) : '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+      ...(() => {
+        const d = r - 2 < SHEET_ROWS ? addDays(SHEET_FIRST_DATE, r - 2) : '';
+        const v = sample && SAMPLE[d];
+        return [d, ...(v ? [...v, ''] : Array(14).fill(''))];
+      })(),
       // target weight: from your FIRST weigh-in, losing perWeek kg per week
       { f: `IF(OR(A${r}="",SUM(${S})=0),"",IF(T${r}<${startD},"",ROUND(${startW}-${perWeek}*(T${r}-${startD})/7,2)))`, s: 6 },
       { f: `IF(OR(C${r}="",P${r}=""),"",ROUND(C${r}-P${r},2))`, s: 6 },
