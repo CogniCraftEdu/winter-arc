@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { HANDLE, IG_URL, MUSCLES, TARGETS } from './config.js';
 import { addDays, buildFrame, fmtDate, fromKey, todayKey } from './lib.js';
-import { aggregates, buildDays, overview, perfectStreaks, weeklyChange } from './analytics.js';
+import { aggregates, buildDays, milestones, overview, perfectStreaks, weeklyChange } from './analytics.js';
 import { journalFromCsv } from './sheet.js';
 import BodyMap from './components/BodyMap.jsx';
 import ConsistencyFrame from './components/ConsistencyFrame.jsx';
@@ -28,15 +28,26 @@ function demoJournal(today) {
 }
 
 // The public numbers come from the daily Google Sheet, relayed by /api/sheet. Re-read every minute.
+// The last good copy is kept in this browser, so a Google or network hiccup never blanks the page.
+const CACHE = 'f2f:sheet:v1';
+const readCache = () => { try { const c = JSON.parse(localStorage.getItem(CACHE) || 'null'); return c && typeof c.csv === 'string' ? c : null; } catch { return null; } };
 function useSheet() {
   const [s, setS] = useState({ status: 'loading' });
   const load = useRef(() => {});
   useEffect(() => {
     let on = true;
+    const fromCache = () => { const c = readCache(); return c ? { status: 'ok', journal: journalFromCsv(c.csv), at: c.at, stale: true } : null; };
     load.current = () => fetch('/api/sheet', { cache: 'no-store' })
-      .then(async (r) => { if (r.status === 501) return { status: 'unlinked' }; if (!r.ok) throw new Error(String(r.status)); return { status: 'ok', journal: journalFromCsv(await r.text()), at: Date.now() }; })
+      .then(async (r) => {
+        if (r.status === 501) return { status: 'unlinked' };
+        if (!r.ok) throw new Error(String(r.status));
+        const csv = await r.text(); const at = Date.now();
+        const journal = journalFromCsv(csv);
+        try { localStorage.setItem(CACHE, JSON.stringify({ csv, at })); } catch { /* private mode: the page still works */ }
+        return { status: 'ok', journal, at };
+      })
       .then((v) => on && setS(v))
-      .catch(() => on && setS((p) => (p.status === 'ok' ? { ...p, stale: true } : { status: 'error' })));
+      .catch(() => on && setS((p) => (p.status === 'ok' ? { ...p, stale: true } : fromCache() || { status: 'error' })));
     load.current();
     const id = setInterval(() => load.current(), 60000);
     const vis = () => { if (!document.hidden) load.current(); };
@@ -82,13 +93,13 @@ function DayStrip({ days, selected, today, onSelect }) {
   );
 }
 
-function DayPanel({ d, t, prevW, today }) {
+function DayPanel({ d, t, prevW, today, dayNo }) {
   const row = d.row; const s = d.st;
   const labels = MUSCLES.filter((m) => (row?.trained || []).includes(m.id)).map((m) => m.label);
   const macroKcal = row ? (row.p || 0) * 4 + (row.c || 0) * 4 + (row.f || 0) * 9 : 0;
   const head = d.k === today ? 'Today' : fmtDate(d.k, { weekday: 'long' });
   return (
-    <Card className="daypanel" title={`${head} · ${fmtDate(d.k, { day: 'numeric', month: 'long', year: 'numeric' })}`}
+    <Card className="daypanel" title={`Day ${dayNo} · ${head} · ${fmtDate(d.k, { day: 'numeric', month: 'long' })}`}
       right={s && <span className={`badge ${s.rest ? 'rest' : s.perfect ? 'ok' : s.n >= 3 ? 'warn' : 'bad'}`}>{s.rest ? 'Rest day' : s.perfect ? 'Perfect day · 4/4' : `${s.n}/4 done`}</span>}>
       {!row ? <p className="dim">{d.k === today ? 'Nothing logged yet today. This fills in as soon as the sheet is updated.' : 'Nothing was logged for this day.'}</p> : (
         <>
@@ -136,6 +147,7 @@ export default function Dashboard() {
   const a7 = useMemo(() => aggregates(days, journal, 7), [days, journal]);
   const streak = useMemo(() => perfectStreaks(days, today), [days, today]);
   const weeks = useMemo(() => weeklyChange(days, today), [days, today]);
+  const ms = useMemo(() => milestones(days, journal), [days, journal]);
 
   const lastLogged = [...days].reverse().find((d) => d.row);
   const selKey = sel && days.some((d) => d.k === sel) ? sel : (lastLogged || days[days.length - 1])?.k;
@@ -165,10 +177,11 @@ export default function Dashboard() {
       <header className="hero">
         <a className="handle" href={IG_URL} target="_blank" rel="noopener noreferrer">{HANDLE}</a>
         <h1>Weight Loss Journal</h1>
+        <p className="kaizen"><span lang="ja">改善</span> Kaizen · 1% better, every single day</p>
         <p className="subtag"><b>Fat to Fit</b>{` · losing ${t.perWeek} kg every week · every day logged in public`}</p>
         <div className="meta">
           {first ? <span>Journal started {fmtDate(first, { day: 'numeric', month: 'long', year: 'numeric' })} · {days.length} day{days.length === 1 ? '' : 's'} and counting</span> : <span>First entry coming soon</span>}
-          {!demo && sheet.status === 'ok' && <span className="live"><i />Live from the daily sheet · {ago === 0 ? 'updated just now' : `updated ${ago} min ago`}{sheet.stale ? ' (couldn’t refresh)' : ''} <button onClick={refresh}>Refresh</button></span>}
+          {!demo && sheet.status === 'ok' && <span className={`live ${sheet.stale ? 'stale' : ''}`}><i />{sheet.stale ? `Showing the last saved copy · ${ago < 60 ? `${ago} min` : ago < 1440 ? `${Math.round(ago / 60)} h` : `${Math.round(ago / 1440)} d`} old · reconnecting` : `Live from the daily sheet · ${ago === 0 ? 'updated just now' : `updated ${ago} min ago`}`} <button onClick={refresh}>Refresh</button></span>}
         </div>
         {demo && <div className="note">Sample data (preview). Real numbers come from the daily sheet.</div>}
         {!demo && sheet.status === 'error' && <div className="note">Couldn’t load the latest numbers. <button onClick={refresh}>Try again</button></div>}
@@ -186,12 +199,12 @@ export default function Dashboard() {
             <Kpi k="Lost so far" big={ov ? sgn(-ov.lost) : '–'} unit="kg" tone={ov && ov.lost > 0 ? 'good' : ''} note={ov ? `${ov.pctOfStart}% of starting weight` : ''} />
             <Kpi k="Weekly trend" big={ov?.trend ? sgn(ov.trend.perWeek, 2) : '–'} unit="kg/wk" tone={trendTone} note={ov?.trend ? `Target −${t.perWeek} · 14-day trend` : 'Needs two weeks of weigh-ins'} />
             <Kpi k="Perfect days" big={agAll.perfect} unit={`of ${agAll.tracked}`} note={`Streak ${streak.cur} · best ${streak.best}`} />
-            <Kpi k="Avg sleep" big={a7.sleep.avg ?? '–'} unit="h" tone={a7.sleep.avg != null && a7.sleep.avg >= t.sleep ? 'good' : 'warn'} note={`Last 7 days · target ${t.sleep} h`} />
+            <Kpi k="Avg sleep" big={a7.sleep.avg ?? '–'} unit={a7.sleep.avg != null ? 'h' : ''} tone={a7.sleep.avg != null && a7.sleep.avg >= t.sleep ? 'good' : a7.sleep.avg != null ? 'warn' : ''} note={a7.sleep.avg != null ? `Last 7 days · target ${t.sleep} h` : 'Not tracked yet · add Sleep (hrs) in the sheet'} />
             <Kpi k="Steps" big={agAll.steps.avg != null ? agAll.steps.avg.toLocaleString('en-IN') : '–'} unit="/ day" note={`${agAll.steps.total.toLocaleString('en-IN')} total · goal ${t.steps.toLocaleString('en-IN')}`} />
           </div>
 
           <div className="grid">
-            {selDay && <div className="c5"><DayPanel d={selDay} t={t} prevW={prevW} today={today} /></div>}
+            {selDay && <div className="c5"><DayPanel d={selDay} t={t} prevW={prevW} today={today} dayNo={selIdx + 1} /></div>}
             <div className="c7 stack">
               <div className="rangebar" role="group" aria-label="Chart range"><span>Trends</span>
                 {RANGES.map(([v, l]) => <button key={l} className={range === v ? 'on' : ''} onClick={() => setRange(v)}>{l}</button>)}</div>
@@ -200,13 +213,29 @@ export default function Dashboard() {
                   lines={[{ name: 'Weight', values: view.map((d) => d.w), color: 'var(--c1)', dots: true }, { name: '7-day average', values: view.map((d) => d.ma7), color: 'var(--c2)', thin: true }, { name: `Target −${t.perWeek} kg/week`, values: view.map((d) => d.target), color: 'var(--muted)', dash: true }]}
                   tip={(i) => [view[i].w != null && { name: 'Weight', text: `${view[i].w.toFixed(1)} kg`, color: 'var(--c1)' }, view[i].ma7 != null && { name: '7-day avg', text: `${view[i].ma7.toFixed(1)} kg`, color: 'var(--c2)' }, view[i].target != null && { name: 'Target', text: `${view[i].target.toFixed(1)} kg` }].filter(Boolean)} />
               </Card>
-              <Card title="Change per week" sub="Kilos gained or lost each Monday–Sunday week; dashed line is the weekly goal">
+              <Card title="Change per week" sub="Kilos gained or lost each Monday–Sunday week. Faded bars are weeks still in progress; the dashed line is the weekly goal">
                 <XYChart xs={wk.map((w) => ({ k: w.start, label: short(w.start), full: `Week of ${short(w.start)}` }))} label="Weight change per week" fmt={(v) => sgn(v)} height={190}
                   bars={[{ name: 'Weekly change (kg)', values: wk.map((w) => w.change), color: 'var(--c1)', colorAt: (i) => (wk[i].partial ? 'color-mix(in srgb, var(--c1) 45%, transparent)' : 'var(--c1)') }]}
                   guide={{ v: -t.perWeek, name: `Goal −${t.perWeek} kg` }}
                   tip={(i) => [{ name: 'Change', text: wk[i].change == null ? 'no weigh-in' : `${sgn(wk[i].change, 2)} kg` }, wk[i].partial && { name: 'Status', text: 'week in progress' }].filter(Boolean)} />
               </Card>
             </div>
+          </div>
+
+          <div className="grid">
+            <div className="c5"><Card title="Before & after" sub={ov ? `Since ${fmtDate(ov.startDate, { day: 'numeric', month: 'long' })}` : 'Needs a first weigh-in'}>
+              {ov ? (
+                <>
+                  <div className="ba"><div><span className="k">Start</span><b>{ov.start.toFixed(1)}<small> kg</small></b></div><i aria-hidden="true">→</i><div><span className="k">Now</span><b>{ov.current.toFixed(1)}<small> kg</small></b></div><div className="lost"><span className="k">Change</span><b>{sgn(-ov.lost)}<small> kg</small></b></div></div>
+                  {t.goalWeight ? (() => { const pct = Math.max(0, Math.min(100, ((ov.start - ov.current) / (ov.start - t.goalWeight)) * 100)); return (<><div className="goalbar" role="img" aria-label={`${Math.round(pct)}% of the way to ${t.goalWeight} kg`}><u style={{ width: `${pct}%` }} /></div><p className="rule">{Math.round(pct)}% of the way to {t.goalWeight} kg · {(ov.current - t.goalWeight).toFixed(1)} kg to go{ov.trend && ov.trend.perWeek < 0 ? ` · about ${Math.ceil((ov.current - t.goalWeight) / -ov.trend.perWeek)} weeks at this pace` : ''}</p></>); })() : ov.in4weeks != null && <p className="rule">At the current 14-day trend: about {ov.in4weeks} kg in four weeks.</p>}
+                </>
+              ) : <p className="dim">Appears after the first weigh-in.</p>}
+            </Card></div>
+            <div className="c7"><Card title="Milestones" sub={`${ms.earned.length} earned · each with the day it was reached`}>
+              {ms.earned.length ? <ul className="badges">{ms.earned.slice(0, 8).map((e) => <li key={`${e.cat}${e.n}`}><b>{e.title}</b><span>{fmtDate(e.date, { day: 'numeric', month: 'short' })}</span></li>)}</ul> : <p className="dim">The first badge lands soon.</p>}
+              <h3 className="nexth">Up next</h3>
+              <ul className="nextlist">{ms.next.map((n) => <li key={n.cat}><span>{n.title}</span><i><u style={{ width: `${Math.min(100, (n.have / n.n) * 100)}%` }} /></i><em>{n.cat === 'steps' ? `${Math.round(n.have / 1000)}k / ${n.n / 1000}k` : `${n.have} / ${n.n}`}</em></li>)}</ul>
+            </Card></div>
           </div>
 
           {frame && <Card title="Consistency" sub="Every square is a day. The darker, the more of the four daily goals were met."><div className="framewrap"><ConsistencyFrame frame={frame} caption="perfect days" maxLabel={4} compact hideLeft /></div>
@@ -218,22 +247,22 @@ export default function Dashboard() {
               <Ring pct={ag.hit.gym} label="Evening gym" sub="session done" />
               <Ring pct={ag.hit.cal} label="Calories" sub={`under ${t.kcal}`} />
               <Ring pct={ag.hit.vlog} label="Vlog" sub="posted" />
-              <Ring pct={ag.hit.sleep} label="Sleep" sub={`${t.sleep} h+`} />
+              <Ring pct={ag.hit.sleep} label="Sleep" sub={ag.hit.sleep == null ? 'not tracked yet' : `${t.sleep} h+`} />
             </div>
           </Card>
 
           <div className="grid">
             <div className="c6"><Card title="Sleep" sub={`Hours per night · ${rangeLabel.toLowerCase()}${ag.sleep.avg != null ? ` · average ${ag.sleep.avg} h` : ''}`}>
-              <XYChart xs={xs} label="Hours of sleep per night" fmt={(v) => v} height={220} onPick={setSel} selected={selKey}
+              <XYChart xs={xs} label="Hours of sleep per night" fmt={(v) => v} height={220} onPick={setSel} selected={selKey} empty="Sleep isn’t tracked yet. Add Sleep (hrs) in the daily sheet and this chart fills in."
                 bars={[{ name: 'Sleep (h)', values: view.map((d) => d.row?.sleep ?? null), color: 'var(--c1)', colorAt: (i) => (view[i].row?.sleep != null && view[i].row.sleep < t.sleep ? 'color-mix(in srgb, var(--c1) 50%, transparent)' : 'var(--c1)') }]}
                 guide={{ v: t.sleep, name: `Target ${t.sleep} h` }}
                 tip={(i) => [{ name: 'Sleep', text: view[i].row?.sleep != null ? `${view[i].row.sleep} h` : 'not logged' }]} />
               <p className="rule">Lighter bars = under the {t.sleep} h target.</p>
             </Card></div>
             <div className="c3"><Card title="Sleep spread" sub={`${ag.sleep.n} nights`}>
-              <Donut label="Nights by hours of sleep" center={ag.sleep.avg ?? '–'} sub="avg hours" parts={[
+              {ag.sleep.n ? <Donut label="Nights by hours of sleep" center={ag.sleep.avg ?? '–'} sub="avg hours" parts={[
                 { name: 'Under 6 h', value: ag.sleep.buckets.under6, color: 'var(--bad)' }, { name: '6–7 h', value: ag.sleep.buckets.s6to7, color: 'var(--warn)' },
-                { name: '7–8 h', value: ag.sleep.buckets.s7to8, color: 'var(--ok)' }, { name: '8 h+', value: ag.sleep.buckets.over8, color: 'var(--c1)' }]} />
+                { name: '7–8 h', value: ag.sleep.buckets.s7to8, color: 'var(--ok)' }, { name: '8 h+', value: ag.sleep.buckets.over8, color: 'var(--c1)' }]} /> : <p className="dim">No sleep logged yet.</p>}
             </Card></div>
             <div className="c3"><Card title="Day outcomes" sub={`${ag.tracked} logged days`}>
               <Donut label="Days by how many goals were met" center={ag.perfect} sub="perfect days" parts={[

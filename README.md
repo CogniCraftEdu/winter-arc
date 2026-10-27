@@ -5,7 +5,7 @@ The public page is a **Weight Loss Journal** with no day limit: it runs from the
 
 | Route | What it is |
 |---|---|
-| `/` | **Public dashboard** (your Instagram bio link). Scrollable day strip, KPIs, weight / weekly-change / sleep / calories / run / pace charts, macro, sleep and outcome donuts, habit rings, body-part counts, GitHub-style consistency frame, full journal table. Reads the daily sheet every minute. |
+| `/` | **Public dashboard** (your Instagram bio link). Scrollable day strip, KPIs, weight / weekly-change / sleep / calories / steps charts, macro, sleep and outcome donuts, habit rings, body-part counts, GitHub-style consistency frame, full journal table. Reads the daily sheet every minute. |
 | `/app` | Private day tracker (stopwatch, plan, notes, reel card). Not linked from the public page, not indexed. |
 | `/api/sheet` | Tiny relay that serves your published Google Sheet (CSV) to the public page. |
 | `/fat-to-fit-daily-sheet.xlsx` | The blank daily sheet. |

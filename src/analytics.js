@@ -134,3 +134,36 @@ export function perfectStreaks(days, today) {
   }
   return { cur, best };
 }
+
+// Badges earned so far, each with the day it was reached, plus how far away the next one in every category is.
+const LADDERS = [
+  { cat: 'weight', unit: 'kg lost', steps: [1, 2, 3, 5, 7.5, 10, 15, 20], title: (n) => `${n} kg down` },
+  { cat: 'streak', unit: 'perfect days in a row', steps: [3, 7, 14, 30, 60], title: (n) => `${n}-day perfect streak` },
+  { cat: 'steps', unit: 'steps walked', steps: [50000, 100000, 250000, 500000, 1000000], title: (n) => `${n.toLocaleString('en-IN')} steps` },
+  { cat: 'vlogs', unit: 'vlogs posted', steps: [7, 14, 30, 60, 100], title: (n) => `${n} vlogs posted` },
+  { cat: 'days', unit: 'days logged', steps: [7, 14, 30, 60, 100], title: (n) => `${n} days logged` },
+];
+
+export function milestones(days, journal) {
+  const start = overview(days, journal)?.start ?? null;
+  const reached = Object.fromEntries(LADDERS.map((l) => [l.cat, new Map()]));
+  const mark = (cat, value, date) => { for (const n of LADDERS.find((l) => l.cat === cat).steps) if (value >= n - 1e-9 && !reached[cat].has(n)) reached[cat].set(n, date); };
+  let run = 0; let best = 0; let stepsTotal = 0; let vlogs = 0; let logged = 0; let bestLost = 0;
+  for (const d of days) {
+    if (!d.row) { run = 0; continue; }
+    logged += 1; mark('days', logged, d.k);
+    if (d.w != null && start != null) { bestLost = Math.max(bestLost, start - d.w); mark('weight', bestLost, d.k); }
+    run = d.st.perfect ? run + 1 : 0; best = Math.max(best, run); mark('streak', best, d.k);
+    stepsTotal += d.row.steps || 0; mark('steps', stepsTotal, d.k);
+    if (d.row.vlog) { vlogs += 1; mark('vlogs', vlogs, d.k); }
+  }
+  const have = { weight: Math.max(0, +bestLost.toFixed(2)), streak: best, steps: stepsTotal, vlogs, days: logged };
+  const earned = []; const next = [];
+  for (const l of LADDERS) {
+    for (const n of l.steps) if (reached[l.cat].has(n)) earned.push({ cat: l.cat, n, title: l.title(n), date: reached[l.cat].get(n) });
+    const up = l.steps.find((n) => !reached[l.cat].has(n));
+    if (up != null) next.push({ cat: l.cat, n: up, title: l.title(up), have: have[l.cat], unit: l.unit });
+  }
+  earned.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.n - a.n));
+  return { earned, next, have };
+}

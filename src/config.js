@@ -21,7 +21,7 @@ export const RULES = [
   { id: 'sleep', label: '7 hours sleep', hint: '11 PM → 6 AM.' },
   { id: 'vlog', label: 'Daily vlog posted', hint: 'Posted between 10 and 11 PM.' },
   { id: 'work', label: '10 hours of work', hint: 'Counted automatically from the stopwatch.', auto: true },
-  { id: 'run', label: 'Morning run', hint: 'Tick it when done, or log a Run session with the stopwatch.' },
+  { id: 'run', label: '10k steps', hint: 'Tick it when you have hit your steps, or log a Walk session with the stopwatch.' },
   { id: 'gym', label: 'Evening gym', hint: 'Tick it when done, or log a Gym session with the stopwatch.' },
 ];
 
@@ -33,7 +33,7 @@ const t = (h, m = 0) => h * 60 + m;
 const hourly = (from, to) => Array.from({ length: to - from }, (_, i) => ({ start: t(from + i), end: t(from + i + 1) }));
 export const SLOTS = [
   { start: t(6), end: t(6, 30) },   // brush, freshen up, face wash
-  { start: t(6, 30), end: t(8, 30) }, // morning run
+  { start: t(6, 30), end: t(8, 30) }, // morning steps / walk
   { start: t(8, 30), end: t(9) },   // bath
   ...hourly(9, 23),                 // 09:00-23:00, one hour each
 ];
@@ -41,7 +41,7 @@ export const SLOT_END = Object.fromEntries(SLOTS.map((s) => [s.start, s.end]));
 export const SLEEP = { from: '23:00', to: '06:00', label: 'Sleep' }; // one long block
 export const TEMPLATE = {
   [t(6)]: { title: 'Brush + freshen up + face wash', cat: 'other' },
-  [t(6, 30)]: { title: 'Morning run', cat: 'run' },
+  [t(6, 30)]: { title: 'Morning walk · 10k steps', cat: 'run' },
   [t(18)]: { title: 'Evening gym', cat: 'gym' },
   [t(8, 30)]: { title: 'Bath + get ready', cat: 'other' },
   [t(13)]: { title: 'Lunch: meal + protein', cat: 'meal' },
@@ -53,7 +53,7 @@ export const TEMPLATE = {
 export const CATS = [
   { id: 'work', label: 'Work', work: true, color: '#5b8cff' },
   { id: 'study', label: 'Study', work: true, color: '#a78bfa' },
-  { id: 'run', label: 'Run', color: '#22d3ee' },
+  { id: 'run', label: 'Steps', color: '#22d3ee' },
   { id: 'gym', label: 'Gym', color: '#34d399' },
   { id: 'meal', label: 'Meal', color: '#fbbf24' },
   { id: 'vlog', label: 'Vlog / Plan', color: '#f472b6' },
@@ -87,6 +87,7 @@ export const TAGLINE = '21-day challenge · −0.75 kg every week';
 export const TARGETS = {
   perWeek: 0.75, // kg lost per week
   startWeight: null, // kg; leave null to use the first weight in the sheet
+  goalWeight: null, // kg; set a number to show progress towards it on the dashboard
   steps: 10000, // daily steps
   kcal: 2400, // daily calories (at or under)
   protein: 150, // grams
