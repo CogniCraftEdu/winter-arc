@@ -71,14 +71,14 @@ export function XYChart({ xs, bars = [], lines = [], guide, tip, selected, onPic
           {ticks.map((v) => <g key={v}><line x1={M.l} x2={W - M.r} y1={Y(v)} y2={Y(v)} className="ch-grid" /><text x={M.l - 8} y={Y(v) + 4} textAnchor="end" className="ch-tick">{fmt(v)}</text></g>)}
           {selected != null && xs.findIndex((x) => x.k === selected) >= 0 && <rect x={M.l + xs.findIndex((x) => x.k === selected) * bw} y={M.t} width={bw} height={H - M.t - M.b} className="ch-sel" />}
           {bars.map((b, bi) => b.values.map((v, i) => (v == null ? null : (
-            <rect key={`${bi}-${i}`} x={X(i) - (bw1 * bars.length) / 2 + bi * bw1} y={Math.min(Y(v), base)} width={bw1} height={Math.max(0, Math.abs(base - Y(v)))} rx={Math.min(3, bw1 / 2)} style={{ fill: b.colorAt ? b.colorAt(i) : b.color }} />
+            <rect key={`${bi}-${i}`} className={v < 0 ? 'bar neg' : 'bar'} x={X(i) - (bw1 * bars.length) / 2 + bi * bw1} y={Math.min(Y(v), base)} width={bw1} height={Math.max(0, Math.abs(base - Y(v)))} rx={Math.min(3, bw1 / 2)} style={{ fill: b.colorAt ? b.colorAt(i) : b.color, '--i': Math.min(i, 40) }} />
           ))))}
           {guide && <line x1={M.l} x2={W - M.r} y1={Y(guide.v)} y2={Y(guide.v)} className="ch-guide" />}
           {lines.map((l, li) => (
             <g key={li} style={{ color: l.color }}>
               {l.dash
                 ? segments(l.values).map((s, si) => <path key={si} d={s.map(([i, v], k) => `${k ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')} className="ch-line dash" />)
-                : segments(l.values).map((s, si) => <path key={si} d={s.map(([i, v], k) => `${k ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')} className={`ch-line ${l.thin ? 'thin' : ''}`} />)}
+                : segments(l.values).map((s, si) => <path key={si} d={s.map(([i, v], k) => `${k ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')} className={`ch-line ${l.thin ? 'thin' : ''}`} pathLength="1" />)}
               {l.dots && l.values.map((v, i) => (v == null ? null : <circle key={i} cx={X(i)} cy={Y(v)} r={n > 60 ? 1.8 : 3} className="ch-dot" />))}
             </g>
           ))}

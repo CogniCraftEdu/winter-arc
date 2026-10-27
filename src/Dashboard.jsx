@@ -57,18 +57,76 @@ function useSheet() {
   return [s, () => load.current()];
 }
 
+const reduced = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
+
+// Welcome screen: shown once per browser session, tap to skip. Skipped entirely for reduced-motion visitors.
+function Intro() {
+  const [on, setOn] = useState(() => { try { return !reduced() && !sessionStorage.getItem('f2f:intro'); } catch { return false; } });
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (!on) return undefined;
+    try { sessionStorage.setItem('f2f:intro', '1'); } catch { /* ignore */ }
+    const a = setTimeout(() => setLeaving(true), 2300); const b = setTimeout(() => setOn(false), 3100);
+    return () => { clearTimeout(a); clearTimeout(b); };
+  }, [on]);
+  if (!on) return null;
+  return (
+    <div className={`intro ${leaving ? 'out' : ''}`} onClick={() => { setLeaving(true); setTimeout(() => setOn(false), 700); }} role="presentation">
+      <div className="intro-in">
+        <span className="i1" lang="ja">改善</span>
+        <span className="i2">Kaizen</span>
+        <span className="i3">1% better, every single day</span>
+        <span className="i4">Weight Loss Journal · @whey.to.lift</span>
+      </div>
+    </div>
+  );
+}
+
+// Counts up to its value when it first appears, and glides to the new value when the sheet changes.
+function Num({ v, d = 0, sign = false, loc = false, delay = 0 }) {
+  const [shown, setShown] = useState(() => (reduced() ? v : 0));
+  const from = useRef(reduced() ? v : 0);
+  useEffect(() => {
+    if (reduced()) { setShown(v); return undefined; }
+    let raf; let t0 = null; const start = from.current; const ms = 1100;
+    const run = (now) => {
+      if (t0 == null) t0 = now;
+      const k = Math.min(1, (now - t0) / ms); const e = 1 - (1 - k) ** 3;
+      setShown(start + (v - start) * e);
+      if (k < 1) raf = requestAnimationFrame(run); else from.current = v;
+    };
+    const t = setTimeout(() => { raf = requestAnimationFrame(run); }, delay);
+    return () => { clearTimeout(t); cancelAnimationFrame(raf); from.current = v; };
+  }, [v, delay]);
+  const txt = loc ? Math.round(Math.abs(shown)).toLocaleString('en-IN') : Math.abs(shown).toFixed(d);
+  const sg = sign ? (v > 0 ? '+' : v < 0 ? '−' : '') : (v < 0 ? '−' : '');
+  return <span>{sg}{txt}</span>;
+}
+
+// Cards fade and rise as they scroll into view.
+function useReveal(dep) {
+  useEffect(() => {
+    const els = [...document.querySelectorAll('.dx .rv:not(.seen)')];
+    if (!els.length) return undefined;
+    if (reduced() || typeof IntersectionObserver === 'undefined') { els.forEach((e) => e.classList.add('seen', 'in')); return undefined; }
+    const io = new IntersectionObserver((es) => es.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: 0.12 });
+    els.forEach((e) => { e.classList.add('seen'); io.observe(e); });
+    return () => io.disconnect();
+  }, [dep]);
+}
+
 const Card = ({ title, sub, className = '', children, right }) => (
-  <section className={`dx-card ${className}`}>
+  <section className={`dx-card rv ${className}`}>
     {(title || right) && <header><div><h2>{title}</h2>{sub && <p>{sub}</p>}</div>{right}</header>}
     {children}
   </section>
 );
 
 function Kpi({ k, big, unit, note, tone }) {
-  return <div className="kpi"><span className="k">{k}</span><div className="v">{big}{unit && <small> {unit}</small>}</div><div className={`n ${tone || ''}`}>{note}</div></div>;
+  return <div className="kpi rv"><span className="k">{k}</span><div className="v">{big}{unit && <small> {unit}</small>}</div><div className={`n ${tone || ''}`}>{note}</div></div>;
 }
 
-function DayStrip({ days, selected, today, onSelect }) {
+function DayStrip({ days, selected, today, onSelect, playing, onPlay }) {
   const ref = useRef(null);
   useEffect(() => { const el = ref.current?.querySelector('[aria-current="true"]'); if (el) el.scrollIntoView({ inline: 'center', block: 'nearest' }); }, [selected, days.length]);
   const go = (n) => { const i = days.findIndex((d) => d.k === selected); const j = Math.max(0, Math.min(days.length - 1, i + n)); if (days[j]) onSelect(days[j].k); };
@@ -89,6 +147,7 @@ function DayStrip({ days, selected, today, onSelect }) {
         })}
       </div>
       <button className="arr" onClick={() => go(1)} aria-label="Next day">›</button>
+      {days.length > 2 && <button className={`play ${playing ? 'on' : ''}`} onClick={onPlay} aria-pressed={playing}><span aria-hidden="true">{playing ? '■' : '▶'}</span><b>{playing ? 'Stop' : 'Replay the journey'}</b></button>}
     </nav>
   );
 }
@@ -135,6 +194,7 @@ export default function Dashboard() {
   const t = journal.target;
   const [range, setRange] = useState(30);
   const [sel, setSel] = useState(null);
+  const [playing, setPlaying] = useState(false);
   const [, tick] = useState(0);
   useEffect(() => { const id = setInterval(() => tick((x) => x + 1), 30000); return () => clearInterval(id); }, []);
   useEffect(() => { document.title = `Weight Loss Journal · Fat to Fit · ${HANDLE}`; }, []);
@@ -153,6 +213,16 @@ export default function Dashboard() {
   const selKey = sel && days.some((d) => d.k === sel) ? sel : (lastLogged || days[days.length - 1])?.k;
   const selDay = days.find((d) => d.k === selKey);
   const selIdx = days.findIndex((d) => d.k === selKey);
+  const dayKeys = days.map((d) => d.k).join(',');
+  useEffect(() => {
+    if (!playing) return undefined;
+    const ks = dayKeys.split(',');
+    let i = 0; setSel(ks[0]);
+    const id = setInterval(() => { i += 1; if (i >= ks.length) { clearInterval(id); setPlaying(false); return; } setSel(ks[i]); }, 750);
+    return () => clearInterval(id);
+  }, [playing, dayKeys]);
+  const togglePlay = () => { if (playing) setPlaying(false); else { window.scrollTo({ top: 0, behavior: 'smooth' }); setPlaying(true); } };
+  useReveal(days.length + range);
   const prevW = selDay ? [...days.slice(0, selIdx)].reverse().find((d) => d.w != null)?.w ?? null : null;
 
   const frame = useMemo(() => {
@@ -174,6 +244,7 @@ export default function Dashboard() {
 
   return (
     <div className="dx">
+      <Intro />
       <header className="hero">
         <a className="handle" href={IG_URL} target="_blank" rel="noopener noreferrer">{HANDLE}</a>
         <h1>Weight Loss Journal</h1>
@@ -188,23 +259,23 @@ export default function Dashboard() {
         {!demo && sheet.status === 'unlinked' && <div className="note">The daily sheet isn’t linked yet.</div>}
       </header>
 
-      {days.length > 0 && <div className="strip-wrap"><DayStrip days={days} selected={selKey} today={today} onSelect={setSel} /></div>}
+      {days.length > 0 && <div className="strip-wrap"><DayStrip days={days} selected={selKey} today={today} onSelect={(k) => { setPlaying(false); setSel(k); }} playing={playing} onPlay={togglePlay} /></div>}
 
       {!days.length ? (
         <Card><p className="dim">{sheet.status === 'loading' ? 'Loading the journal…' : 'No entries yet. Once the first day is added to the sheet, everything appears here automatically.'}</p></Card>
       ) : (
         <main>
           <div className="kpis">
-            <Kpi k="Weight now" big={ov ? ov.current.toFixed(1) : '–'} unit="kg" note={ov ? `${short(ov.currentDate)} · started ${ov.start.toFixed(1)}` : 'First weigh-in coming'} />
-            <Kpi k="Lost so far" big={ov ? sgn(-ov.lost) : '–'} unit="kg" tone={ov && ov.lost > 0 ? 'good' : ''} note={ov ? `${ov.pctOfStart}% of starting weight` : ''} />
-            <Kpi k="Weekly trend" big={ov?.trend ? sgn(ov.trend.perWeek, 2) : '–'} unit="kg/wk" tone={trendTone} note={ov?.trend ? `Target −${t.perWeek} · 14-day trend` : 'Needs two weeks of weigh-ins'} />
-            <Kpi k="Perfect days" big={agAll.perfect} unit={`of ${agAll.tracked}`} note={`Streak ${streak.cur} · best ${streak.best}`} />
+            <Kpi k="Weight now" big={ov ? <Num v={ov.current} d={1} delay={600} /> : '–'} unit="kg" note={ov ? `${short(ov.currentDate)} · started ${ov.start.toFixed(1)}` : 'First weigh-in coming'} />
+            <Kpi k="Lost so far" big={ov ? <Num v={-ov.lost} d={1} sign delay={700} /> : '–'} unit="kg" tone={ov && ov.lost > 0 ? 'good' : ''} note={ov ? `${ov.pctOfStart}% of starting weight` : ''} />
+            <Kpi k="Weekly trend" big={ov?.trend ? <Num v={ov.trend.perWeek} d={2} sign delay={800} /> : '–'} unit="kg/wk" tone={trendTone} note={ov?.trend ? `Target −${t.perWeek} · 14-day trend` : 'Needs two weeks of weigh-ins'} />
+            <Kpi k="Perfect days" big={<Num v={agAll.perfect} delay={900} />} unit={`of ${agAll.tracked}`} note={`Streak ${streak.cur} · best ${streak.best}`} />
             <Kpi k="Avg sleep" big={a7.sleep.avg ?? '–'} unit={a7.sleep.avg != null ? 'h' : ''} tone={a7.sleep.avg != null && a7.sleep.avg >= t.sleep ? 'good' : a7.sleep.avg != null ? 'warn' : ''} note={a7.sleep.avg != null ? `Last 7 days · target ${t.sleep} h` : 'Not tracked yet · add Sleep (hrs) in the sheet'} />
-            <Kpi k="Steps" big={agAll.steps.avg != null ? agAll.steps.avg.toLocaleString('en-IN') : '–'} unit="/ day" note={`${agAll.steps.total.toLocaleString('en-IN')} total · goal ${t.steps.toLocaleString('en-IN')}`} />
+            <Kpi k="Steps" big={agAll.steps.avg != null ? <Num v={agAll.steps.avg} loc delay={1000} /> : '–'} unit="/ day" note={`${agAll.steps.total.toLocaleString('en-IN')} total · goal ${t.steps.toLocaleString('en-IN')}`} />
           </div>
 
           <div className="grid">
-            {selDay && <div className="c5"><DayPanel d={selDay} t={t} prevW={prevW} today={today} dayNo={selIdx + 1} /></div>}
+            {selDay && <div className="c5" key={selDay.k}><DayPanel d={selDay} t={t} prevW={prevW} today={today} dayNo={selIdx + 1} /></div>}
             <div className="c7 stack">
               <div className="rangebar" role="group" aria-label="Chart range"><span>Trends</span>
                 {RANGES.map(([v, l]) => <button key={l} className={range === v ? 'on' : ''} onClick={() => setRange(v)}>{l}</button>)}</div>

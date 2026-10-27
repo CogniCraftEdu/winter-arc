@@ -150,3 +150,57 @@
 .dx .nexth { margin: 18px 0 8px; font: 500 11px var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
 .dx .nextlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; } .dx .nextlist li { display: grid; grid-template-columns: minmax(130px, 1.2fr) 2fr auto; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); }
 .dx .nextlist i { height: 6px; background: var(--line); border-radius: 4px; overflow: hidden; display: block; } .dx .nextlist u { display: block; height: 100%; background: var(--c1); text-decoration: none; } .dx .nextlist em { font-style: normal; font-variant-numeric: tabular-nums; min-width: 70px; text-align: right; }
+
+/* ---------- motion ---------- */
+.dx .intro { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: grid; place-items: center; text-align: center; cursor: pointer; transition: transform .75s cubic-bezier(.76,0,.24,1), opacity .75s; }
+.dx .intro.out { transform: translateY(-100%); opacity: .6; }
+.dx .intro-in { display: grid; gap: 10px; justify-items: center; padding: 24px; }
+.dx .intro-in span { opacity: 0; transform: translateY(14px); animation: rise .8s cubic-bezier(.2,.7,.2,1) forwards; }
+.dx .i1 { font: 700 clamp(88px, 22vw, 180px)/1 var(--sans); letter-spacing: -0.04em; color: var(--accent); animation-delay: .1s !important; }
+.dx .i2 { font: 300 clamp(22px, 5vw, 36px) var(--sans); letter-spacing: .5em; text-transform: uppercase; margin-right: -.5em; animation-delay: .6s !important; }
+.dx .i3 { font: italic 400 clamp(20px, 4vw, 30px)/1.2 var(--serif); color: var(--muted); animation-delay: 1.1s !important; }
+.dx .i4 { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); margin-top: 18px; animation-delay: 1.5s !important; }
+@keyframes rise { to { opacity: 1; transform: none; } }
+
+.dx .hero > * { animation: rise .8s cubic-bezier(.2,.7,.2,1) both; opacity: 0; transform: translateY(12px); }
+.dx .hero > :nth-child(2) { animation-delay: .15s; } .dx .hero > :nth-child(3) { animation-delay: .3s; } .dx .hero > :nth-child(4) { animation-delay: .42s; } .dx .hero > :nth-child(5) { animation-delay: .54s; }
+.dx .hero > :first-child { animation-delay: .05s; }
+
+.dx .rv { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
+.dx .rv.in { opacity: 1; transform: none; }
+.dx .kpis .kpi:nth-child(2) { transition-delay: .06s; } .dx .kpis .kpi:nth-child(3) { transition-delay: .12s; } .dx .kpis .kpi:nth-child(4) { transition-delay: .18s; } .dx .kpis .kpi:nth-child(5) { transition-delay: .24s; } .dx .kpis .kpi:nth-child(6) { transition-delay: .3s; }
+
+/* charts draw themselves when their card appears */
+.dx .rv.in .ch-line:not(.dash) { stroke-dasharray: 1; animation: draw 1.4s cubic-bezier(.4,0,.2,1) both; }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.dx .rv.in .ch-dot { animation: pop .5s ease both .9s; }
+@keyframes pop { from { opacity: 0; } to { opacity: 1; } }
+.dx .rv.in .ch-svg rect.bar { transform-box: fill-box; transform-origin: 50% 100%; animation: grow .7s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * 22ms); }
+.dx .rv.in .ch-svg rect.bar.neg { transform-origin: 50% 0%; }
+@keyframes grow { from { transform: scaleY(0); } }
+.dx .rv.in .dn-arc { animation: sweep 1.1s cubic-bezier(.4,0,.2,1) both; }
+@keyframes sweep { from { stroke-dasharray: 0 999; } }
+.dx .rv.in .rg-arc { animation: sweep 1.2s cubic-bezier(.4,0,.2,1) both; }
+.dx .rv.in .hb u, .dx .rv.in .nextlist u, .dx .rv.in .goalbar u { animation: widen 1s cubic-bezier(.2,.7,.2,1) both; transform-origin: left; }
+@keyframes widen { from { transform: scaleX(0); } }
+.dx .rv.in .badges li { animation: rise .6s cubic-bezier(.2,.7,.2,1) both; opacity: 0; } .dx .badges li:nth-child(2) { animation-delay: .08s !important; } .dx .badges li:nth-child(3) { animation-delay: .16s !important; } .dx .badges li:nth-child(4) { animation-delay: .24s !important; } .dx .badges li:nth-child(5) { animation-delay: .32s !important; } .dx .badges li:nth-child(n+6) { animation-delay: .4s !important; }
+.dx .rv.in .fc { animation: pop .4s ease both; }
+
+/* picking a day (or replaying the journey) */
+.dx .daypanel { animation: swap .45s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes swap { from { opacity: .0; transform: translateX(14px); } }
+.dx .daypanel .dt { animation: rise .5s cubic-bezier(.2,.7,.2,1) both; opacity: 0; } .dx .daypanel .dt:nth-child(2) { animation-delay: .05s; } .dx .daypanel .dt:nth-child(3) { animation-delay: .1s; } .dx .daypanel .dt:nth-child(4) { animation-delay: .15s; } .dx .daypanel .dt:nth-child(5) { animation-delay: .2s; } .dx .daypanel .dt:nth-child(6) { animation-delay: .25s; }
+.dx .bm-hit { animation: glow 1.6s ease-in-out infinite alternate; }
+@keyframes glow { from { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--accent) 40%, transparent)); } to { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 80%, transparent)); } }
+.dx .chip { transition: transform .2s, background .25s, border-color .25s; } .dx .chip:hover { transform: translateY(-3px); }
+.dx .chip[aria-current="true"] { transform: translateY(-3px) scale(1.04); }
+.dx .play { flex: none; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line-2); background: var(--panel); color: var(--text); border-radius: 99px; padding: 8px 15px; font: 500 13px var(--sans); cursor: pointer; transition: background .2s; }
+.dx .play b { font-weight: 500; } .dx .play:hover, .dx .play.on { background: var(--text); color: var(--bg); } .dx .play span { font-size: 10px; }
+.dx .play:not(.on) span { animation: nudge 1.8s ease-in-out infinite; } @keyframes nudge { 50% { transform: translateX(3px); } }
+.dx .dx-card, .dx .kpi { transition: border-color .3s, opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); } .dx .dx-card:hover, .dx .kpi:hover { border-color: var(--line-2); }
+@media (max-width: 640px) { .dx .play b { display: none; } .dx .play { padding: 8px 11px; } }
+@media (prefers-reduced-motion: reduce) {
+  .dx *, .dx *::before, .dx *::after { animation: none !important; transition: none !important; }
+  .dx .rv, .dx .hero > *, .dx .daypanel .dt, .dx .badges li { opacity: 1 !important; transform: none !important; }
+  .dx .intro { display: none; }
+}
