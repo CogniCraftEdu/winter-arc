@@ -103,20 +103,24 @@ function Num({ v, d = 0, sign = false, loc = false, delay = 0 }) {
   return <span>{sg}{txt}</span>;
 }
 
-// Cards fade and rise as they scroll into view.
-function useReveal(dep) {
+// Cards fade and rise as they scroll into view. One observer lives for the whole page and picks up cards that mount later
+// (new data, a different range), so nothing can stay hidden.
+function useReveal() {
+  const io = useRef(null);
+  const seen = useRef(new WeakSet());
   useEffect(() => {
-    const els = [...document.querySelectorAll('.dx .rv:not(.seen)')];
-    if (!els.length) return undefined;
-    if (reduced() || typeof IntersectionObserver === 'undefined') { els.forEach((e) => e.classList.add('seen', 'in')); return undefined; }
-    const io = new IntersectionObserver((es) => es.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: 0.12 });
-    els.forEach((e) => { e.classList.add('seen'); io.observe(e); });
-    return () => io.disconnect();
-  }, [dep]);
+    const plain = reduced() || typeof IntersectionObserver === 'undefined';
+    if (!plain && !io.current) io.current = new IntersectionObserver((es) => es.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.current.unobserve(en.target); } }), { threshold: 0.08 });
+    document.querySelectorAll('.dx .rv:not(.in)').forEach((el) => {
+      if (plain) { el.classList.add('in'); return; }
+      if (!seen.current.has(el)) { seen.current.add(el); io.current.observe(el); }
+    });
+  });
+  useEffect(() => () => io.current?.disconnect(), []);
 }
 
-const Card = ({ title, sub, className = '', children, right }) => (
-  <section className={`dx-card rv ${className}`}>
+const Card = ({ title, sub, className = '', children, right, reveal = true }) => (
+  <section className={`dx-card ${reveal ? 'rv' : ''} ${className}`}>
     {(title || right) && <header><div><h2>{title}</h2>{sub && <p>{sub}</p>}</div>{right}</header>}
     {children}
   </section>
@@ -158,7 +162,7 @@ function DayPanel({ d, t, prevW, today, dayNo }) {
   const macroKcal = row ? (row.p || 0) * 4 + (row.c || 0) * 4 + (row.f || 0) * 9 : 0;
   const head = d.k === today ? 'Today' : fmtDate(d.k, { weekday: 'long' });
   return (
-    <Card className="daypanel" title={`Day ${dayNo} · ${head} · ${fmtDate(d.k, { day: 'numeric', month: 'long' })}`}
+    <Card className="daypanel" reveal={false} title={`Day ${dayNo} · ${head} · ${fmtDate(d.k, { day: 'numeric', month: 'long' })}`}
       right={s && <span className={`badge ${s.rest ? 'rest' : s.perfect ? 'ok' : s.n >= 3 ? 'warn' : 'bad'}`}>{s.rest ? 'Rest day' : s.perfect ? 'Perfect day · 4/4' : `${s.n}/4 done`}</span>}>
       {!row ? <p className="dim">{d.k === today ? 'Nothing logged yet today. This fills in as soon as the sheet is updated.' : 'Nothing was logged for this day.'}</p> : (
         <>
@@ -222,7 +226,7 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, [playing, dayKeys]);
   const togglePlay = () => { if (playing) setPlaying(false); else { window.scrollTo({ top: 0, behavior: 'smooth' }); setPlaying(true); } };
-  useReveal(days.length + range);
+  useReveal();
   const prevW = selDay ? [...days.slice(0, selIdx)].reverse().find((d) => d.w != null)?.w ?? null : null;
 
   const frame = useMemo(() => {
