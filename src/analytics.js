@@ -167,3 +167,60 @@ export function milestones(days, journal) {
   earned.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.n - a.n));
   return { earned, next, have };
 }
+
+// The days that mattered, found automatically: start, biggest drop, scale bounces, new lows, best streak,
+// best steps / sleep / week, first missed goals, weight and steps milestones, and the latest day.
+// Each is { id, date, kind, tone: 'good' | 'info' | 'warn', title, detail }, ordered by date.
+export function highlights(days, journal, today) {
+  const t = journal.target;
+  const ev = [];
+  const add = (e) => ev.push({ tone: 'info', ...e });
+  const ws = days.filter((d) => d.w != null);
+  const logged = days.filter((d) => d.row);
+  if (!logged.length) return [];
+  const sgn1 = (n, d = 1) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(d)}`;
+  const name = { steps: 'steps', gym: 'gym', cal: 'calories', vlog: 'vlog' };
+
+  if (ws.length) add({ id: 'start', date: ws[0].k, kind: 'Start', tone: 'info', title: `Started at ${ws[0].w.toFixed(1)} kg`, detail: `Day one of the journal. Target: −${t.perWeek} kg every week.` });
+
+  const steps = ws.slice(1).map((d, i) => ({ d, delta: +(d.w - ws[i].w).toFixed(2) }));
+  const drop = steps.reduce((a, s) => (!a || s.delta < a.delta ? s : a), null);
+  if (drop && drop.delta <= -0.2) add({ id: 'drop', date: drop.d.k, kind: 'Biggest drop', tone: 'good', title: `${sgn1(drop.delta)} kg between weigh-ins`, detail: `Down to ${drop.d.w.toFixed(1)} kg, the biggest single fall so far.` });
+  const up = steps.reduce((a, s) => (!a || s.delta > a.delta ? s : a), null);
+  if (up && up.delta >= 0.3) add({ id: 'bounce', date: up.d.k, kind: 'Scale bounce', tone: 'warn', title: `${sgn1(up.delta)} kg on the scale`, detail: 'Daily weight swings with water, salt and timing. The trend line is what counts.' });
+  if (ws.length > 2) { const low = ws.reduce((a, d) => (d.w < a.w ? d : a), ws[0]); if (low.k !== ws[0].k) add({ id: 'low', date: low.k, kind: 'Lowest weight', tone: 'good', title: `${low.w.toFixed(1)} kg, a new low`, detail: `${(ws[0].w - low.w).toFixed(1)} kg below the starting weight.` }); }
+
+  let run = 0; let best = { n: 0, end: null, start: null }; let startK = null;
+  for (const d of days) {
+    if (d.st?.perfect) { if (!run) startK = d.k; run += 1; if (run > best.n) best = { n: run, end: d.k, start: startK }; } else if (d.k !== today) run = 0;
+  }
+  if (best.n >= 3) add({ id: 'streak', date: best.end, kind: 'Longest streak', tone: 'good', title: `${best.n} perfect days in a row`, detail: `${fmtShortDate(best.start)} to ${fmtShortDate(best.end)}: steps, gym, calories and vlog every day.` });
+
+  const stepRows = logged.filter((d) => d.row.steps > 0);
+  if (stepRows.length > 2) {
+    const top = stepRows.reduce((a, d) => (d.row.steps > a.row.steps ? d : a), stepRows[0]);
+    const mean = stepRows.reduce((a, d) => a + d.row.steps, 0) / stepRows.length;
+    if (top.row.steps > mean * 1.05) add({ id: 'steps', date: top.k, kind: 'Most steps', tone: 'good', title: `${top.row.steps.toLocaleString('en-IN')} steps`, detail: `${Math.round((top.row.steps / mean - 1) * 100)}% above the usual day.` });
+  }
+  const sleepRows = logged.filter((d) => d.row.sleep != null);
+  if (sleepRows.length > 2) { const top = sleepRows.reduce((a, d) => (d.row.sleep > a.row.sleep ? d : a), sleepRows[0]); add({ id: 'sleep', date: top.k, kind: 'Best sleep', tone: 'good', title: `${top.row.sleep} hours of sleep`, detail: `The longest night recorded${top.row.sleep >= t.sleep ? `, above the ${t.sleep} h target` : ''}.` }); }
+
+  const wk = weeklyChange(days, today).filter((w) => w.change != null && w.change < 0 && w.n >= 2);
+  if (wk.length) {
+    const w = wk.reduce((a, x) => (x.change < a.change ? x : a), wk[0]);
+    const last = days.filter((d) => d.k >= w.start && d.k <= w.end && d.w != null).pop();
+    if (last && w.change <= -0.3) add({ id: 'week', date: last.k, kind: 'Best week', tone: 'good', title: `${sgn1(w.change)} kg in a week`, detail: `Week of ${fmtShortDate(w.start)}${w.partial ? ' (still in progress)' : ''}.` });
+  }
+
+  const miss = logged.find((d) => !d.st.perfect && !d.st.rest && d.k !== today);
+  if (miss) { const lost = ['steps', 'gym', 'cal', 'vlog'].filter((k) => !miss.st[k]).map((k) => name[k]); add({ id: 'miss', date: miss.k, kind: 'First miss', tone: 'warn', title: `${miss.st.n} of 4 goals done`, detail: `Missed: ${lost.join(', ')}. Kaizen is about getting back on track the next day.` }); }
+
+  for (const m of milestones(days, journal).earned.filter((e) => e.cat === 'weight' || e.cat === 'steps')) add({ id: `ms-${m.cat}-${m.n}`, date: m.date, kind: 'Milestone', tone: 'good', title: m.title, detail: m.cat === 'weight' ? 'Weight milestone reached.' : 'Total steps milestone reached.' });
+
+  const latest = logged[logged.length - 1];
+  add({ id: 'now', date: latest.k, kind: latest.k === today ? 'Today' : 'Latest', tone: 'info', title: latest.w != null ? `${latest.w.toFixed(1)} kg, ${latest.st.rest ? 'rest day' : `${latest.st.n} of 4 goals`}` : `${latest.st.rest ? 'Rest day' : `${latest.st.n} of 4 goals`}`, detail: `${logged.length} days logged so far.` });
+
+  const order = { Start: 0, Milestone: 1, Today: 9, Latest: 9 };
+  return ev.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : (order[a.kind] ?? 5) - (order[b.kind] ?? 5)));
+}
+const fmtShortDate = (k) => fromKey(k).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });

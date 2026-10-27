@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { HANDLE, IG_URL, MUSCLES, TARGETS } from './config.js';
 import { addDays, buildFrame, fmtDate, fromKey, todayKey } from './lib.js';
-import { aggregates, buildDays, milestones, overview, perfectStreaks, weeklyChange } from './analytics.js';
+import { aggregates, buildDays, highlights, milestones, overview, perfectStreaks, weeklyChange } from './analytics.js';
 import { journalFromCsv } from './sheet.js';
 import BodyMap from './components/BodyMap.jsx';
 import ConsistencyFrame from './components/ConsistencyFrame.jsx';
@@ -130,7 +130,7 @@ function Kpi({ k, big, unit, note, tone }) {
   return <div className="kpi rv"><span className="k">{k}</span><div className="v">{big}{unit && <small> {unit}</small>}</div><div className={`n ${tone || ''}`}>{note}</div></div>;
 }
 
-function DayStrip({ days, selected, today, onSelect, playing, onPlay }) {
+function DayStrip({ days, selected, today, onSelect, playing, onPlay, canPlay }) {
   const ref = useRef(null);
   useEffect(() => { const el = ref.current?.querySelector('[aria-current="true"]'); if (el) el.scrollIntoView({ inline: 'center', block: 'nearest' }); }, [selected, days.length]);
   const go = (n) => { const i = days.findIndex((d) => d.k === selected); const j = Math.max(0, Math.min(days.length - 1, i + n)); if (days[j]) onSelect(days[j].k); };
@@ -151,7 +151,7 @@ function DayStrip({ days, selected, today, onSelect, playing, onPlay }) {
         })}
       </div>
       <button className="arr" onClick={() => go(1)} aria-label="Next day">›</button>
-      {days.length > 2 && <button className={`play ${playing ? 'on' : ''}`} onClick={onPlay} aria-pressed={playing}><span aria-hidden="true">{playing ? '■' : '▶'}</span><b>{playing ? 'Stop' : 'Replay the journey'}</b></button>}
+      {canPlay && <button className={`play ${playing ? 'on' : ''}`} onClick={onPlay} aria-pressed={playing}><span aria-hidden="true">{playing ? '■' : '▶'}</span><b>{playing ? 'Stop' : 'Play highlights'}</b></button>}
     </nav>
   );
 }
@@ -198,7 +198,7 @@ export default function Dashboard() {
   const t = journal.target;
   const [range, setRange] = useState(30);
   const [sel, setSel] = useState(null);
-  const [playing, setPlaying] = useState(false);
+  const [story, setStory] = useState(null); // { i, paused } while the highlight reel plays
   const [, tick] = useState(0);
   useEffect(() => { const id = setInterval(() => tick((x) => x + 1), 30000); return () => clearInterval(id); }, []);
   useEffect(() => { document.title = `Weight Loss Journal · Fat to Fit · ${HANDLE}`; }, []);
@@ -217,15 +217,16 @@ export default function Dashboard() {
   const selKey = sel && days.some((d) => d.k === sel) ? sel : (lastLogged || days[days.length - 1])?.k;
   const selDay = days.find((d) => d.k === selKey);
   const selIdx = days.findIndex((d) => d.k === selKey);
-  const dayKeys = days.map((d) => d.k).join(',');
+  const hl = useMemo(() => highlights(days, journal, today), [days, journal, today]);
+  const startStory = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStory({ i: 0, paused: false }); };
+  const goStory = (i) => setStory((st) => (st ? { ...st, i: Math.max(0, Math.min(hl.length - 1, i)) } : st));
   useEffect(() => {
-    if (!playing) return undefined;
-    const ks = dayKeys.split(',');
-    let i = 0; setSel(ks[0]);
-    const id = setInterval(() => { i += 1; if (i >= ks.length) { clearInterval(id); setPlaying(false); return; } setSel(ks[i]); }, 750);
-    return () => clearInterval(id);
-  }, [playing, dayKeys]);
-  const togglePlay = () => { if (playing) setPlaying(false); else { window.scrollTo({ top: 0, behavior: 'smooth' }); setPlaying(true); } };
+    if (!story || !hl[story.i]) return undefined;
+    setSel(hl[story.i].date);
+    if (story.paused) return undefined;
+    const id = setTimeout(() => (story.i + 1 >= hl.length ? setStory({ i: story.i, paused: true, done: true }) : setStory({ i: story.i + 1, paused: false })), 4200);
+    return () => clearTimeout(id);
+  }, [story?.i, story?.paused, hl]); // eslint-disable-line react-hooks/exhaustive-deps
   useReveal();
   const prevW = selDay ? [...days.slice(0, selIdx)].reverse().find((d) => d.w != null)?.w ?? null : null;
 
@@ -263,7 +264,7 @@ export default function Dashboard() {
         {!demo && sheet.status === 'unlinked' && <div className="note">The daily sheet isn’t linked yet.</div>}
       </header>
 
-      {days.length > 0 && <div className="strip-wrap"><DayStrip days={days} selected={selKey} today={today} onSelect={(k) => { setPlaying(false); setSel(k); }} playing={playing} onPlay={togglePlay} /></div>}
+      {days.length > 0 && <div className="strip-wrap"><DayStrip days={days} selected={selKey} today={today} onSelect={(k) => { setStory(null); setSel(k); }} playing={!!story} onPlay={() => (story ? setStory(null) : startStory())} canPlay={hl.length > 2} /></div>}
 
       {!days.length ? (
         <Card><p className="dim">{sheet.status === 'loading' ? 'Loading the journal…' : 'No entries yet. Once the first day is added to the sheet, everything appears here automatically.'}</p></Card>
@@ -296,6 +297,15 @@ export default function Dashboard() {
               </Card>
             </div>
           </div>
+
+          {hl.length > 2 && (
+            <Card className="hlcard" title="Key moments" sub="The days that mattered, found automatically from the sheet. Tap one to open that day."
+              right={<button className="play solid" onClick={startStory}><span aria-hidden="true">▶</span><b>Play highlights</b></button>}>
+              <ul className="hl">{hl.map((e, i) => (
+                <li key={e.id}><button className={`hl-item ${e.tone}`} onClick={() => { setStory(null); setSel(e.date); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+                  <span className="hl-k">{e.kind} · {short(e.date)}</span><b>{e.title}</b><em>{e.detail}</em></button></li>))}</ul>
+            </Card>
+          )}
 
           <div className="grid">
             <div className="c5"><Card title="Before & after" sub={ov ? `Since ${fmtDate(ov.startDate, { day: 'numeric', month: 'long' })}` : 'Needs a first weigh-in'}>
@@ -404,6 +414,22 @@ export default function Dashboard() {
             </Card></div>
           </div>
         </main>
+      )}
+
+      {story && hl[story.i] && (
+        <aside className={`story ${hl[story.i].tone}`} role="status" aria-live="polite">
+          <div className="story-dots" aria-hidden="true">{hl.map((e, i) => <i key={e.id} className={i < story.i ? 'done' : i === story.i ? 'now' : ''} style={i === story.i && !story.paused ? { '--ms': '4200ms' } : undefined} />)}</div>
+          <div className="story-main" key={hl[story.i].id}>
+            <span className="hl-k">{hl[story.i].kind} · {fmtDate(hl[story.i].date, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+            <b>{hl[story.i].title}</b><em>{story.done ? 'That is the journey so far. Come back tomorrow for the next chapter.' : hl[story.i].detail}</em>
+          </div>
+          <div className="story-ctl">
+            <button onClick={() => goStory(story.i - 1)} aria-label="Previous moment" disabled={story.i === 0}>‹</button>
+            <button onClick={() => (story.done ? startStory() : setStory({ ...story, paused: !story.paused }))} aria-label={story.done ? 'Replay' : story.paused ? 'Resume' : 'Pause'}>{story.done ? '↺' : story.paused ? '▶' : '❚❚'}</button>
+            <button onClick={() => goStory(story.i + 1)} aria-label="Next moment" disabled={story.i === hl.length - 1}>›</button>
+            <button onClick={() => setStory(null)} aria-label="Close">✕</button>
+          </div>
+        </aside>
       )}
 
       <section className="cta">
