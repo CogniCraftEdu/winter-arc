@@ -151,7 +151,7 @@ function DayStrip({ days, selected, today, onSelect, playing, onPlay, canPlay })
         })}
       </div>
       <button className="arr" onClick={() => go(1)} aria-label="Next day">›</button>
-      {canPlay && <button className={`play ${playing ? 'on' : ''}`} onClick={onPlay} aria-pressed={playing}><span aria-hidden="true">{playing ? '■' : '▶'}</span><b>{playing ? 'Stop' : 'Play highlights'}</b></button>}
+      {canPlay && <button className={`play ${playing ? 'on' : ''}`} onClick={onPlay} aria-pressed={playing}><span aria-hidden="true">{playing ? '■' : '▶'}</span><b>{playing ? 'Stop' : 'Play my journey'}</b></button>}
     </nav>
   );
 }
@@ -218,15 +218,32 @@ export default function Dashboard() {
   const selDay = days.find((d) => d.k === selKey);
   const selIdx = days.findIndex((d) => d.k === selKey);
   const hl = useMemo(() => highlights(days, journal, today), [days, journal, today]);
-  const startStory = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStory({ i: 0, paused: false }); };
-  const goStory = (i) => setStory((st) => (st ? { ...st, i: Math.max(0, Math.min(hl.length - 1, i)) } : st));
+  // The recap: a short story of the whole journey (start, what is tracked, where I am, milestones, what is next).
+  const slides = useMemo(() => {
+    const out = []; const first = days[0]?.k;
+    const n = (x) => x.toLocaleString('en-IN');
+    if (ov) out.push({ id: 'start', kicker: `Day 1 · ${fmtDate(ov.startDate, { day: 'numeric', month: 'long', year: 'numeric' })}`, big: ov.start.toFixed(1), unit: 'kg', title: 'Where it started', lines: [`The starting weight. The goal: lose ${t.perWeek} kg every week, in public.`] });
+    out.push({ id: 'track', kicker: 'What I track every day', big: '6', unit: 'daily numbers', title: 'One sheet, everything public', chips: ['Weight', `${n(t.steps)} steps`, 'Evening gym', `Calories under ${n(t.kcal)}`, 'Protein · carbs · fat', `Sleep ${t.sleep} h`, 'Daily vlog'] });
+    if (ov) out.push({ id: 'now', kicker: `Day ${days.length} · ${fmtDate(days[days.length - 1].k, { day: 'numeric', month: 'long' })}`, big: ov.current.toFixed(1), unit: 'kg', title: ov.lost > 0 ? `${ov.lost.toFixed(1)} kg down (${ov.pctOfStart}% of where I started)` : 'Where I am now', lines: [ov.status ? (ov.status === 'on pace' ? `Right on the −${t.perWeek} kg/week line.` : `${Math.abs(ov.diff).toFixed(2)} kg ${ov.status} of the −${t.perWeek} kg/week line.`) : null, ov.trend ? `14-day trend: ${sgn(ov.trend.perWeek, 2)} kg a week.` : null, ov.in4weeks != null ? `If it holds: about ${ov.in4weeks} kg in four weeks.` : null].filter(Boolean) });
+    if (agAll.tracked) out.push({ id: 'cons', kicker: 'Consistency', big: String(agAll.perfect), unit: `of ${agAll.tracked} days perfect`, title: `Streak ${streak.cur} · best ${streak.best}`, lines: [`Steps goal ${agAll.hit.steps ?? 0}% · gym ${agAll.hit.gym ?? 0}% · calories ${agAll.hit.cal ?? 0}% · vlog ${agAll.hit.vlog ?? 0}%`, agAll.steps.avg != null ? `Average ${n(agAll.steps.avg)} steps a day.` : null].filter(Boolean) });
+    if (ms.earned.length) out.push({ id: 'ms', kicker: 'Major milestones', big: String(ms.earned.length), unit: 'earned so far', title: 'The moments so far', items: [...ms.earned].sort((a, b) => (a.date < b.date ? -1 : 1)).slice(-6).map((e) => `${e.title} · ${short(e.date)}`) });
+    const big = hl.filter((e) => e.tone === 'good' && !e.id.startsWith('ms-') && e.id !== 'start').slice(0, 3);
+    if (big.length) out.push({ id: 'hl', kicker: 'Best days', title: 'Highlights', items: big.map((e) => `${e.kind}: ${e.title} · ${short(e.date)}`) });
+    out.push({ id: 'next', kicker: 'What is next', big: first ? 'Day ' + (days.length + 1) : '', title: 'Up next', items: ms.next.slice(0, 4).map((x) => `${x.title}: ${x.cat === 'steps' ? `${Math.round(x.have / 1000)}k of ${x.n / 1000}k` : `${x.have} of ${x.n}`}`), lines: ['Kaizen: 1% better, every single day. Come back tomorrow for the next chapter.'] });
+    return out;
+  }, [days, ov, t, agAll, streak, ms, hl]); // eslint-disable-line react-hooks/exhaustive-deps
+  const startStory = () => { window.scrollTo({ top: 0 }); setStory({ i: 0, paused: false }); };
+  const goStory = (i) => setStory((st) => (st ? { ...st, i: Math.max(0, Math.min(slides.length - 1, i)), done: false } : st));
   useEffect(() => {
-    if (!story || !hl[story.i]) return undefined;
-    setSel(hl[story.i].date);
-    if (story.paused) return undefined;
-    const id = setTimeout(() => (story.i + 1 >= hl.length ? setStory({ i: story.i, paused: true, done: true }) : setStory({ i: story.i + 1, paused: false })), 4200);
+    if (!story || story.paused) return undefined;
+    const id = setTimeout(() => (story.i + 1 >= slides.length ? setStory({ i: story.i, paused: true, done: true }) : setStory({ i: story.i + 1, paused: false })), 5200);
     return () => clearTimeout(id);
-  }, [story?.i, story?.paused, hl]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [story?.i, story?.paused]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!story) return undefined;
+    const k = (e) => { if (e.key === 'Escape') setStory(null); if (e.key === 'ArrowRight') goStory(story.i + 1); if (e.key === 'ArrowLeft') goStory(story.i - 1); };
+    window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
+  }, [story?.i]); // eslint-disable-line react-hooks/exhaustive-deps
   useReveal();
   const prevW = selDay ? [...days.slice(0, selIdx)].reverse().find((d) => d.w != null)?.w ?? null : null;
 
@@ -264,7 +281,7 @@ export default function Dashboard() {
         {!demo && sheet.status === 'unlinked' && <div className="note">The daily sheet isn’t linked yet.</div>}
       </header>
 
-      {days.length > 0 && <div className="strip-wrap"><DayStrip days={days} selected={selKey} today={today} onSelect={(k) => { setStory(null); setSel(k); }} playing={!!story} onPlay={() => (story ? setStory(null) : startStory())} canPlay={hl.length > 2} /></div>}
+      {days.length > 0 && <div className="strip-wrap"><DayStrip days={days} selected={selKey} today={today} onSelect={(k) => { setStory(null); setSel(k); }} playing={!!story} onPlay={() => (story ? setStory(null) : startStory())} canPlay={days.length > 0} /></div>}
 
       {!days.length ? (
         <Card><p className="dim">{sheet.status === 'loading' ? 'Loading the journal…' : 'No entries yet. Once the first day is added to the sheet, everything appears here automatically.'}</p></Card>
@@ -299,8 +316,8 @@ export default function Dashboard() {
           </div>
 
           {hl.length > 2 && (
-            <Card className="hlcard" title="Key moments" sub="The days that mattered, found automatically from the sheet. Tap one to open that day."
-              right={<button className="play solid" onClick={startStory}><span aria-hidden="true">▶</span><b>Play highlights</b></button>}>
+            <Card className="hlcard" title="Key moments" sub="The days that mattered, found automatically from the sheet. Tap one to open that day, or play the whole journey as a short story."
+              right={<button className="play solid" onClick={startStory}><span aria-hidden="true">▶</span><b>Play my journey</b></button>}>
               <ul className="hl">{hl.map((e, i) => (
                 <li key={e.id}><button className={`hl-item ${e.tone}`} onClick={() => { setStory(null); setSel(e.date); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
                   <span className="hl-k">{e.kind} · {short(e.date)}</span><b>{e.title}</b><em>{e.detail}</em></button></li>))}</ul>
@@ -416,21 +433,26 @@ export default function Dashboard() {
         </main>
       )}
 
-      {story && hl[story.i] && (
-        <aside className={`story ${hl[story.i].tone}`} role="status" aria-live="polite">
-          <div className="story-dots" aria-hidden="true">{hl.map((e, i) => <i key={e.id} className={i < story.i ? 'done' : i === story.i ? 'now' : ''} style={i === story.i && !story.paused ? { '--ms': '4200ms' } : undefined} />)}</div>
-          <div className="story-main" key={hl[story.i].id}>
-            <span className="hl-k">{hl[story.i].kind} · {fmtDate(hl[story.i].date, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-            <b>{hl[story.i].title}</b><em>{story.done ? 'That is the journey so far. Come back tomorrow for the next chapter.' : hl[story.i].detail}</em>
+      {story && slides[story.i] && (() => { const sl = slides[story.i]; return (
+        <div className="recap" role="dialog" aria-modal="true" aria-label="My journey so far" onClick={(e) => { if (e.target === e.currentTarget) setStory(null); }}>
+          <div className="recap-card">
+            <div className="story-dots" aria-hidden="true">{slides.map((x, i) => <i key={x.id} className={i < story.i ? 'done' : i === story.i ? 'now' : ''} style={i === story.i && !story.paused ? { '--ms': '5200ms' } : undefined} />)}</div>
+            <button className="recap-x" onClick={() => setStory(null)} aria-label="Close">✕</button>
+            <div className="recap-body" key={sl.id}>
+              <span className="hl-k">{sl.kicker}</span>
+              {sl.big && <div className="recap-big">{sl.big}{sl.unit && <small> {sl.unit}</small>}</div>}
+              <h3>{sl.title}</h3>
+              {sl.chips && <ul className="recap-chips">{sl.chips.map((c) => <li key={c}>{c}</li>)}</ul>}
+              {sl.items && <ul className="recap-items">{sl.items.map((c) => <li key={c}>{c}</li>)}</ul>}
+              {sl.lines && sl.lines.map((l) => <p key={l}>{l}</p>)}
+            </div>
+            <div className="story-ctl">
+              <button onClick={() => goStory(story.i - 1)} aria-label="Previous" disabled={story.i === 0}>‹</button>
+              <button onClick={() => (story.done ? startStory() : setStory({ ...story, paused: !story.paused }))} aria-label={story.done ? 'Replay' : story.paused ? 'Resume' : 'Pause'}>{story.done ? '↺' : story.paused ? '▶' : '❚❚'}</button>
+              <button onClick={() => goStory(story.i + 1)} aria-label="Next" disabled={story.i === slides.length - 1}>›</button>
+            </div>
           </div>
-          <div className="story-ctl">
-            <button onClick={() => goStory(story.i - 1)} aria-label="Previous moment" disabled={story.i === 0}>‹</button>
-            <button onClick={() => (story.done ? startStory() : setStory({ ...story, paused: !story.paused }))} aria-label={story.done ? 'Replay' : story.paused ? 'Resume' : 'Pause'}>{story.done ? '↺' : story.paused ? '▶' : '❚❚'}</button>
-            <button onClick={() => goStory(story.i + 1)} aria-label="Next moment" disabled={story.i === hl.length - 1}>›</button>
-            <button onClick={() => setStory(null)} aria-label="Close">✕</button>
-          </div>
-        </aside>
-      )}
+        </div>); })()}
 
       <section className="cta">
         <div>Follow the journey</div>

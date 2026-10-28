@@ -225,3 +225,18 @@
 .dx .story-ctl { display: flex; gap: 6px; } .dx .story-ctl button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--panel); color: var(--text); cursor: pointer; font-size: 14px; } .dx .story-ctl button:disabled { opacity: .35; cursor: default; }
 @media (max-width: 640px) { .dx .story { bottom: 10px; grid-template-columns: 1fr; } .dx .story-ctl { justify-content: center; } .dx .story-main b { font-size: 19px; } }
 @media (prefers-reduced-motion: reduce) { .dx .story-main { opacity: 1 !important; transform: none !important; } .dx .story-dots i.now::after { animation: none !important; } }
+
+/* ---------- journey recap ---------- */
+.dx .recap { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: blur(14px); animation: pop .35s ease both; }
+.dx .recap-card { position: relative; width: min(640px, 100%); min-height: 440px; background: var(--panel); border: 1px solid var(--line-2); border-radius: 24px; padding: 20px 28px 22px; display: grid; grid-template-rows: auto 1fr auto; gap: 14px; box-shadow: 0 30px 90px rgba(0,0,0,.35); animation: lift2 .5s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes lift2 { from { opacity: 0; transform: translateY(28px) scale(.97); } }
+.dx .recap-x { position: absolute; top: 28px; right: 18px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: transparent; color: var(--muted); font-size: 16px; cursor: pointer; }
+.dx .recap-body { display: grid; align-content: center; gap: 10px; padding: 14px 4px; animation: rise .55s cubic-bezier(.2,.7,.2,1) both; opacity: 0; transform: translateY(10px); }
+.dx .recap-big { font: 200 clamp(64px, 16vw, 112px)/1 var(--sans); letter-spacing: -0.05em; font-variant-numeric: tabular-nums; } .dx .recap-big small { font: 400 20px var(--sans); letter-spacing: 0; color: var(--muted); }
+.dx .recap-body h3 { margin: 0; font: 600 clamp(20px, 4vw, 26px)/1.2 var(--sans); letter-spacing: -0.02em; } .dx .recap-body p { margin: 0; color: var(--muted); font-size: 15px; }
+.dx .recap-chips { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; } .dx .recap-chips li { border: 1px solid var(--line-2); border-radius: 99px; padding: 6px 14px; font-size: 14px; }
+.dx .recap-items { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; } .dx .recap-items li { border-left: 3px solid var(--ok); padding: 4px 0 4px 12px; font-size: 15px; }
+.dx .recap .story-ctl { justify-content: center; }
+@media (max-width: 640px) { .dx .recap-card { padding: 16px 18px 18px; min-height: 420px; } }
+@media (prefers-reduced-motion: reduce) { .dx .recap-body { opacity: 1 !important; transform: none !important; } }
+.dx .recap-body h3 { text-transform: none; color: var(--text); letter-spacing: -0.02em; }
