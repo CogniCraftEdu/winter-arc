@@ -116,3 +116,18 @@ export const MUSCLES = [
   { id: 'hamstrings', label: 'Hamstrings' },
   { id: 'calves', label: 'Calves' },
 ];
+
+// ---- The Kaizen Protocol ----
+// One experiment a week. The dashboard compares the week under test with the 7 days before it and shows the result.
+// metric: 'sleep' (nights at the sleep target) | 'steps' (days at the steps goal) | 'calories' (days within the calorie target)
+export const EXPERIMENTS = [
+  { id: 'sleep-7', title: 'Sleep 7+ hours', question: 'Does getting 7+ hours of sleep every night move the scale faster?', metric: 'sleep', start: '2026-11-02', end: '2026-11-08' },
+];
+
+// Fill these in to switch on the "estimated fat loss" card (calories in vs out). Leave null to keep it hidden.
+export const PROFILE = { sex: null, ageYears: null, heightCm: null }; // sex: 'male' | 'female'
+
+// Lets followers copy your sheet template ("Make a copy"). Works because the sheet is shared as Viewer.
+export const SHEET_COPY_URL = 'https://docs.google.com/spreadsheets/d/1X-PC7_gJUWIUhmjztmm7TO0eWEUe6DIbDDb-ivN7XS8/copy';
+
+export const POSITIONING = 'Quit the 9–5. Losing 0.75 kg a week in public. Every number verifiable, one experiment a week.';

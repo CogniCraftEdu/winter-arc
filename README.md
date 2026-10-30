@@ -7,6 +7,9 @@ The public page is a **Weight Loss Journal** with no day limit: it runs from the
 |---|---|
 | `/` | **Public dashboard** (your Instagram bio link). Scrollable day strip, KPIs, weight / weekly-change / sleep / calories / steps charts, macro, sleep and outcome donuts, habit rings, body-part counts, GitHub-style consistency frame, full journal table. Reads the daily sheet every minute. |
 | `/app` | Private day tracker (stopwatch, plan, notes, reel card). Not linked from the public page, not indexed. |
+| `/?reel` | Clean no-scroll phone-shaped view (day, weight, today's four goals) to screen-record as a vlog opening or closing shot. |
+| `/?check` | Owner-only sheet check: lists values that look like typos (weight jumps, steps that look like km, missing days). |
+| `/?demo` | Sample data preview (works on `/` and `/?reel`). |
 | `/api/sheet` | Tiny relay that serves your published Google Sheet (CSV) to the public page. |
 | `/fat-to-fit-daily-sheet.xlsx` | The blank daily sheet. |
 
@@ -51,3 +54,14 @@ npm run dev       # the /api relay only runs on Vercel
 npm run build
 npm run sheet     # regenerate public/fat-to-fit-daily-sheet.xlsx from the dates in config.js
 ```
+
+
+## The Kaizen Protocol (what the dashboard shows)
+- **Kaizen score** (0-100 per day): 70% goals met (of 4), 15% steps vs target, 15% sleep vs target. Until sleep is tracked the score is out of the other 85 points.
+- **Weekly experiment**: edit `EXPERIMENTS` in `src/config.js` (title, question, metric `sleep` / `steps` / `calories`, start and end date). The card compares that week with the 7 days before it.
+- **What the data says**: appears after 14 logged days; every line shows its sample size.
+- **Estimated fat loss**: fill `PROFILE` (sex, age, height) in `src/config.js` to switch it on. It is an estimate from calories in vs out.
+- **Goal weight**: set `TARGETS.goalWeight` in `src/config.js` to show progress and an estimated finish.
+- **Share card**: the "Share progress card" button makes a Story-sized PNG. **Copy my system** links to `SHEET_COPY_URL`.
+- **Visit counts**: switch on Analytics in the Vercel project (Analytics tab); the page already sends the events.
+- **Install**: the page has a web manifest and icons, so it can be added to a phone's home screen.

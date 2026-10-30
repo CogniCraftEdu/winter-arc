@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { HANDLE, IG_URL, MUSCLES, TARGETS } from './config.js';
+import { EXPERIMENTS, HANDLE, IG_URL, MUSCLES, POSITIONING, PROFILE, SHEET_COPY_URL, TARGETS } from './config.js';
 import { addDays, buildFrame, fmtDate, fromKey, todayKey } from './lib.js';
-import { aggregates, buildDays, highlights, milestones, overview, perfectStreaks, weeklyChange } from './analytics.js';
+import { aggregates, buildDays, estimateBurn, experimentResult, highlights, insights, milestones, overview, perfectStreaks, sheetChecks, weekCompare, weeklyChange, weeklyReports } from './analytics.js';
+import { BurnCard, ExperimentCard, InsightsCard, KaizenCard, RulesStrip, SheetCheck, ShareButton, ThemeToggle, TodayRing, VlogGallery, WeekCompareCard, WeeklyReports } from './components/Protocol.jsx';
 import { journalFromCsv } from './sheet.js';
 import BodyMap from './components/BodyMap.jsx';
 import ConsistencyFrame from './components/ConsistencyFrame.jsx';
 import { Donut, HBars, Legend, Ring, XYChart } from './components/charts.jsx';
 
-const EMPTY = { target: { ...TARGETS }, days: {} };
+export const EMPTY = { target: { ...TARGETS }, days: {} };
 const sgn = (n, d = 1) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(d)}`;
 const short = (k) => fmtDate(k, { day: 'numeric', month: 'short' });
 const RANGES = [[14, '14 days'], [30, '30 days'], [90, '90 days'], [null, 'All time']];
 
 // Sample data for previewing the page (add ?demo to the address). Never shown to visitors by default.
-function demoJournal(today) {
+export function demoJournal(today) {
   const days = {};
   for (let i = 0; i < 42; i += 1) {
     const k = addDays(today, i - 41); const rest = i % 7 === 6;
@@ -31,7 +32,7 @@ function demoJournal(today) {
 // The last good copy is kept in this browser, so a Google or network hiccup never blanks the page.
 const CACHE = 'f2f:sheet:v1';
 const readCache = () => { try { const c = JSON.parse(localStorage.getItem(CACHE) || 'null'); return c && typeof c.csv === 'string' ? c : null; } catch { return null; } };
-function useSheet() {
+export function useSheet() {
   const [s, setS] = useState({ status: 'loading' });
   const load = useRef(() => {});
   useEffect(() => {
@@ -83,7 +84,7 @@ function Intro() {
 }
 
 // Counts up to its value when it first appears, and glides to the new value when the sheet changes.
-function Num({ v, d = 0, sign = false, loc = false, delay = 0 }) {
+export function Num({ v, d = 0, sign = false, loc = false, delay = 0 }) {
   const [shown, setShown] = useState(() => (reduced() ? v : 0));
   const from = useRef(reduced() ? v : 0);
   useEffect(() => {
@@ -218,6 +219,25 @@ export default function Dashboard() {
   const selDay = days.find((d) => d.k === selKey);
   const selIdx = days.findIndex((d) => d.k === selKey);
   const hl = useMemo(() => highlights(days, journal, today), [days, journal, today]);
+  const ins = useMemo(() => insights(days, t), [days, t]);
+  const wc = useMemo(() => weekCompare(days, today), [days, today]);
+  const reports = useMemo(() => weeklyReports(days, today), [days, today]);
+  const experiments = useMemo(() => EXPERIMENTS.map((e) => experimentResult(e, days, today, t)), [days, today, t]);
+  const checkMode = new URLSearchParams(window.location.search).has('check');
+  const warnings = useMemo(() => (checkMode ? sheetChecks(days, today) : []), [days, today, checkMode]);
+  const burn = useMemo(() => {
+    const w7 = days.slice(-7); const rows = w7.filter((d) => d.row);
+    const kc = rows.map((d) => d.row.kcal).filter((x) => x != null); const stp = rows.map((d) => d.row.steps).filter((x) => x > 0);
+    if (!kc.length || !ov) return null;
+    const avgKcal = kc.reduce((a, b) => a + b, 0) / kc.length; const avgSteps = stp.length ? stp.reduce((a, b) => a + b, 0) / stp.length : 0;
+    const est = estimateBurn(PROFILE, ov.current, avgKcal, avgSteps, rows.filter((d) => d.st.gym && !d.st.rest).length / rows.length);
+    return est ? { est, avgKcal, avgSteps } : null;
+  }, [days, ov]);
+  const todayDay = days.find((d) => d.k === today) || null;
+  const shareData = useMemo(() => {
+    const last = [...days].reverse().find((d) => d.row); if (!last || !ov) return null;
+    return { day: days.findIndex((d) => d.k === last.k) + 1, weight: ov.current, lost: ov.lost, since: short(ov.startDate), score: last.score, streak: streak.cur, goals: [['steps', last.st.steps], ['gym', last.st.gym], ['cal', last.st.cal], ['vlog', last.st.vlog]].map(([k, done]) => ({ k, done })), handle: HANDLE, url: window.location.host };
+  }, [days, ov, streak]);
   // The recap: a short story of the whole journey (start, what is tracked, where I am, milestones, what is next).
   const slides = useMemo(() => {
     const out = []; const first = days[0]?.k;
@@ -268,6 +288,7 @@ export default function Dashboard() {
     <div className="dx">
       <Intro />
       <header className="hero">
+        <ThemeToggle />
         <a className="handle" href={IG_URL} target="_blank" rel="noopener noreferrer">{HANDLE}</a>
         <h1>Weight Loss Journal</h1>
         <p className="kaizen"><span lang="ja">改善</span> Kaizen · 1% better, every single day</p>
@@ -280,6 +301,9 @@ export default function Dashboard() {
         {!demo && sheet.status === 'error' && <div className="note">Couldn’t load the latest numbers. <button onClick={refresh}>Try again</button></div>}
         {!demo && sheet.status === 'unlinked' && <div className="note">The daily sheet isn’t linked yet.</div>}
       </header>
+
+      <RulesStrip t={t} positioning={POSITIONING} />
+      {days.length > 0 && <TodayRing day={todayDay} today={today} />}
 
       {days.length > 0 && <div className="strip-wrap"><DayStrip days={days} selected={selKey} today={today} onSelect={(k) => { setStory(null); setSel(k); }} playing={!!story} onPlay={() => (story ? setStory(null) : startStory())} canPlay={days.length > 0} /></div>}
 
@@ -294,6 +318,11 @@ export default function Dashboard() {
             <Kpi k="Perfect days" big={<Num v={agAll.perfect} delay={900} />} unit={`of ${agAll.tracked}`} note={`Streak ${streak.cur} · best ${streak.best}`} />
             <Kpi k="Avg sleep" big={a7.sleep.avg ?? '–'} unit={a7.sleep.avg != null ? 'h' : ''} tone={a7.sleep.avg != null && a7.sleep.avg >= t.sleep ? 'good' : a7.sleep.avg != null ? 'warn' : ''} note={a7.sleep.avg != null ? `Last 7 days · target ${t.sleep} h` : 'Not tracked yet · add Sleep (hrs) in the sheet'} />
             <Kpi k="Steps" big={agAll.steps.avg != null ? <Num v={agAll.steps.avg} loc delay={1000} /> : '–'} unit="/ day" note={`${agAll.steps.total.toLocaleString('en-IN')} total · goal ${t.steps.toLocaleString('en-IN')}`} />
+          </div>
+
+          <div className="grid">
+            <div className="c7"><KaizenCard days={days} view={view} xs={xs} t={t} onPick={setSel} selected={selKey} /></div>
+            <div className="c5 stack"><ExperimentCard results={experiments} /><WeekCompareCard wc={wc} /></div>
           </div>
 
           <div className="grid">
@@ -313,6 +342,11 @@ export default function Dashboard() {
                   tip={(i) => [{ name: 'Change', text: wk[i].change == null ? 'no weigh-in' : `${sgn(wk[i].change, 2)} kg` }, wk[i].partial && { name: 'Status', text: 'week in progress' }].filter(Boolean)} />
               </Card>
             </div>
+          </div>
+
+          <div className="grid">
+            <div className="c7"><InsightsCard ins={ins} /></div>
+            <div className="c5 stack">{burn && <BurnCard est={burn.est} avgKcal={burn.avgKcal} avgSteps={burn.avgSteps} target={t.perWeek} />}<WeeklyReports reports={reports.slice(0, 6)} /></div>
           </div>
 
           {hl.length > 2 && (
@@ -406,6 +440,9 @@ export default function Dashboard() {
             </Card></div>
           </div>
 
+          {checkMode && <SheetCheck warnings={warnings} />}
+          <VlogGallery days={days} handle={HANDLE} />
+
           <div className="grid">
             <div className="c5"><Card title="What I track" sub="Everything below is filled in daily from one sheet">
               <ul className="track">
@@ -457,6 +494,7 @@ export default function Dashboard() {
       <section className="cta">
         <div>Follow the journey</div>
         <a href={IG_URL} target="_blank" rel="noopener noreferrer">Follow {HANDLE}</a>
+        <div className="cta-row">{shareData && <ShareButton data={shareData} />}<a className="ghost" href={SHEET_COPY_URL} target="_blank" rel="noopener noreferrer">Copy my system (sheet)</a></div>
         <p>A new vlog and an updated dashboard every single day.</p>
       </section>
     </div>

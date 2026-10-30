@@ -23,6 +23,7 @@ export function buildDays(journal, today) {
     const row = journal.days[k] || null;
     return {
       k, row, st: row ? dayStatus(row, t) : null, w: row?.w ?? null, ma7: null,
+      score: row ? kaizenScore(row, dayStatus(row, t), t) : null,
       target: startEntry && k >= startEntry.date ? r2(startEntry.w - t.perWeek * (diffDays(k, startEntry.date) / 7)) : null,
     };
   });
@@ -224,3 +225,129 @@ export function highlights(days, journal, today) {
   return ev.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : (order[a.kind] ?? 5) - (order[b.kind] ?? 5)));
 }
 const fmtShortDate = (k) => fromKey(k).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+// ---------- Kaizen score, insights, comparisons, estimates, sheet checks ----------
+
+// One 0-100 number per day: 70% goals met (of 4), 15% steps vs target, 15% sleep vs target.
+// Without a sleep entry the score is out of the other 85 points, so not tracking sleep never costs points.
+export function kaizenScore(row, st, t) {
+  const goals = (st.n / 4) * 70;
+  const stepsPart = st.rest ? 15 : Math.min(1, (row.steps || 0) / (t.steps || 1)) * 15;
+  if (row.sleep == null) return Math.round(((goals + stepsPart) / 85) * 100);
+  return Math.round(goals + stepsPart + Math.min(1, row.sleep / (t.sleep || 1)) * 15);
+}
+
+const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+const mondayOf = (k) => addDays(k, -((fromKey(k).getDay() + 6) % 7));
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const sg = (n, d = 1) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(d)}`;
+
+// Patterns in the journal's own numbers. Only shown from 14 logged days, and every line carries its sample size.
+export function insights(days, t, need = 14) {
+  const logged = days.filter((d) => d.row);
+  if (logged.length < need) return { ready: false, have: logged.length, need, items: [] };
+  const byKey = new Map(days.map((d) => [d.k, d]));
+  const into = (d) => { const p = byKey.get(addDays(d.k, -1)); return d.w != null && p?.w != null ? +(d.w - p.w).toFixed(2) : null; }; // change from the day before
+  const items = [];
+  const pairs = days.map((d) => ({ d, delta: into(d) })).filter((x) => x.delta != null);
+
+  const sl = pairs.filter((x) => x.d.row?.sleep != null);
+  const longN = sl.filter((x) => x.d.row.sleep >= t.sleep); const shortN = sl.filter((x) => x.d.row.sleep < t.sleep);
+  if (longN.length >= 4 && shortN.length >= 4) {
+    const a = mean(longN.map((x) => x.delta)); const b = mean(shortN.map((x) => x.delta));
+    items.push({ id: 'sleep', icon: 'sleep', title: 'Sleep and the scale', n: `${longN.length} vs ${shortN.length} mornings`, text: Math.abs(a - b) >= 0.15 ? `Mornings after ${t.sleep}+ hours of sleep: the scale moved ${sg(a, 2)} kg on average. After shorter nights: ${sg(b, 2)} kg.` : `No clear link yet: ${sg(a, 2)} kg after ${t.sleep}+ hours vs ${sg(b, 2)} kg after less.` });
+  }
+  const stepsBy = Array.from({ length: 7 }, () => []);
+  for (const d of logged) if (d.row.steps > 0) stepsBy[fromKey(d.k).getDay()].push(d.row.steps);
+  const wd = stepsBy.map((a, i) => ({ i, n: a.length, avg: mean(a) })).filter((x) => x.n >= 2);
+  if (wd.length >= 5) {
+    const hi = wd.reduce((a, x) => (x.avg > a.avg ? x : a)); const lo = wd.reduce((a, x) => (x.avg < a.avg ? x : a));
+    if (hi.avg > lo.avg * 1.08) items.push({ id: 'weekday', icon: 'steps', title: 'Walking by weekday', n: `${logged.length} days`, text: `${WEEKDAYS[hi.i]} is the best walking day (${Math.round(hi.avg).toLocaleString('en-IN')} steps on average), ${WEEKDAYS[lo.i]} the quietest (${Math.round(lo.avg).toLocaleString('en-IN')}).` });
+  }
+  const afterRest = pairs.filter((x) => byKey.get(addDays(x.d.k, -1))?.st?.rest);
+  const afterTrain = pairs.filter((x) => { const p = byKey.get(addDays(x.d.k, -1)); return p?.st && !p.st.rest; });
+  if (afterRest.length >= 2 && afterTrain.length >= 4) {
+    const a = mean(afterRest.map((x) => x.delta)); const b = mean(afterTrain.map((x) => x.delta));
+    items.push({ id: 'rest', icon: 'rest', title: 'Rest days', n: `${afterRest.length} rest days`, text: `The morning after a rest day the scale moved ${sg(a, 2)} kg on average, vs ${sg(b, 2)} kg after a training day.${afterRest.length < 4 ? ' (Small sample.)' : ''}` });
+  }
+  const over = pairs.filter((x) => { const p = byKey.get(addDays(x.d.k, -1)); return p?.row?.kcal != null && t.kcal && p.row.kcal > t.kcal; });
+  const under = pairs.filter((x) => { const p = byKey.get(addDays(x.d.k, -1)); return p?.row?.kcal != null && t.kcal && p.row.kcal <= t.kcal; });
+  if (over.length >= 3 && under.length >= 4) {
+    const a = mean(over.map((x) => x.delta)); const b = mean(under.map((x) => x.delta));
+    items.push({ id: 'cal', icon: 'cal', title: 'Calories and the scale', n: `${over.length} vs ${under.length} days`, text: `The morning after going over ${t.kcal} kcal the scale moved ${sg(a, 2)} kg. After a day within target: ${sg(b, 2)} kg.` });
+  }
+  const perf = logged.filter((d) => d.st.perfect).length;
+  items.push({ id: 'perf', icon: 'perfect', title: 'Consistency', n: `${logged.length} days`, text: `${perf} of ${logged.length} days hit every goal (${Math.round((perf / logged.length) * 100)}%).` });
+  return { ready: true, have: logged.length, need, items };
+}
+
+// This (Monday-start) week so far against the previous full week.
+export function weekCompare(days, today) {
+  const m = mondayOf(today); const pm = addDays(m, -7);
+  const pick = (a, b) => days.filter((d) => d.k >= a && d.k <= b);
+  const sum = (ds) => {
+    const rows = ds.filter((d) => d.row);
+    return { n: rows.length, weight: mean(ds.map((d) => d.w).filter((x) => x != null)), steps: mean(rows.map((d) => d.row.steps).filter((x) => x > 0)), kcal: mean(rows.map((d) => d.row.kcal).filter((x) => x != null)), sleep: mean(rows.map((d) => d.row.sleep).filter((x) => x != null)), perfect: rows.filter((d) => d.st.perfect).length };
+  };
+  const cur = sum(pick(m, today)); const prev = sum(pick(pm, addDays(m, -1)));
+  if (!cur.n || !prev.n) return null;
+  return { cur, prev, curStart: m, prevStart: pm };
+}
+
+// One line per Monday-start week.
+export function weeklyReports(days, today) {
+  const weeks = new Map();
+  for (const d of days) { const m = mondayOf(d.k); if (!weeks.has(m)) weeks.set(m, []); weeks.get(m).push(d); }
+  const out = []; let prevW = null;
+  for (const [start, ds] of weeks) {
+    const rows = ds.filter((d) => d.row); const ws = ds.filter((d) => d.w != null);
+    const last = ws.length ? ws[ws.length - 1].w : null;
+    const base = prevW ?? (ws.length ? ws[0].w : null);
+    out.push({ start, end: addDays(start, 6), open: addDays(start, 6) >= today, days: rows.length, change: last != null && base != null && (prevW != null || ws.length > 1) ? +(last - base).toFixed(2) : null, perfect: rows.filter((d) => d.st.perfect).length, steps: mean(rows.map((d) => d.row.steps).filter((x) => x > 0)), score: mean(rows.map((d) => d.score)) });
+    if (last != null) prevW = last;
+  }
+  return out.reverse();
+}
+
+// Rough weekly fat-loss estimate from calories in vs calories out. Needs sex, age and height in config (PROFILE); otherwise null.
+export function estimateBurn(profile, weight, avgKcal, avgSteps, gymShare = 0) {
+  if (!profile || !profile.sex || !profile.ageYears || !profile.heightCm || weight == null || avgKcal == null) return null;
+  const bmr = 10 * weight + 6.25 * profile.heightCm - 5 * profile.ageYears + (profile.sex === 'male' ? 5 : -161);
+  const tdee = bmr * 1.2 + (avgSteps || 0) * 0.045 * (weight / 70) + gymShare * 300;
+  const deficit = tdee - avgKcal;
+  return { bmr: Math.round(bmr), tdee: Math.round(tdee), deficit: Math.round(deficit), weeklyKg: +((deficit * 7) / 7700).toFixed(2) };
+}
+
+// Warnings for the owner (open the page with ?check): values that look like typos before they confuse the public page.
+export function sheetChecks(days, today) {
+  const out = []; let prev = null;
+  for (const d of days) {
+    const r = d.row;
+    if (!r) { if (d.k < today) out.push({ k: d.k, msg: 'No entry for this day.' }); continue; }
+    if (r.w != null) {
+      if (r.w < 30 || r.w > 250) out.push({ k: d.k, msg: `Weight ${r.w} kg looks wrong.` });
+      if (prev && Math.abs(r.w - prev.w) > 3 && diffDays(d.k, prev.k) <= 3) out.push({ k: d.k, msg: `Weight jumped ${sg(r.w - prev.w)} kg since ${prev.k}.` });
+      prev = { k: d.k, w: r.w };
+    }
+    if (r.steps != null && r.steps > 60000) out.push({ k: d.k, msg: `${r.steps.toLocaleString('en-IN')} steps looks too high.` });
+    if (r.steps != null && r.steps > 0 && r.steps < 100) out.push({ k: d.k, msg: `Steps = ${r.steps}: did you enter kilometres?` });
+    if (r.kcal != null && (r.kcal < 800 || r.kcal > 6000)) out.push({ k: d.k, msg: `${r.kcal} kcal looks wrong.` });
+    if (r.sleep != null && (r.sleep < 2 || r.sleep > 14)) out.push({ k: d.k, msg: `${r.sleep} hours of sleep looks wrong.` });
+    if (r.rest && r.steps > 0 && r.steps >= 8000) out.push({ k: d.k, msg: 'Marked as a rest day but has a lot of steps.' });
+  }
+  return out;
+}
+
+// A weekly experiment from config (EXPERIMENTS): the week under test against the 7 days before it.
+export function experimentResult(exp, days, today, t) {
+  const status = today < exp.start ? 'upcoming' : today <= exp.end ? 'running' : 'done';
+  const inWin = days.filter((d) => d.k >= exp.start && d.k <= exp.end);
+  const before = days.filter((d) => d.k >= addDays(exp.start, -7) && d.k < exp.start);
+  const net = (ds) => { const ws = ds.filter((d) => d.w != null); return ws.length >= 2 ? +(ws[ws.length - 1].w - ws[0].w).toFixed(2) : null; };
+  const rows = inWin.filter((d) => d.row);
+  const ok = { sleep: (d) => d.row.sleep != null && d.row.sleep >= t.sleep, steps: (d) => d.st.steps, calories: (d) => d.st.cal }[exp.metric] || (() => false);
+  const days7 = Math.max(1, Math.min(7, diffDays(exp.end, exp.start) + 1));
+  const adherent = rows.filter(ok).length;
+  const a = net(inWin); const b = net(before);
+  return { ...exp, status, logged: rows.length, adherent, of: days7, change: a, baseChange: b, better: a != null && b != null ? a < b : null };
+}

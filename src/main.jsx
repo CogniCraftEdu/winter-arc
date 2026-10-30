@@ -2,6 +2,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import Dashboard from './Dashboard.jsx';
+import ReelMode from './ReelMode.jsx';
+import { inject } from '@vercel/analytics';
 import './styles.css';
 import './dashboard.css';
 
@@ -12,4 +14,7 @@ const isApp = path === '/app' || window.location.hash === '#/app';
 // The private tracker should never be indexed by search engines.
 if (isApp) document.head.insertAdjacentHTML('beforeend', '<meta name="robots" content="noindex,nofollow">');
 
-createRoot(document.getElementById('root')).render(isApp ? <App /> : <Dashboard />);
+// Visit counts for the public page only (needs Analytics switched on in the Vercel project; harmless otherwise).
+if (!isApp && !new URLSearchParams(window.location.search).has('reel')) inject();
+
+createRoot(document.getElementById('root')).render(isApp ? <App /> : new URLSearchParams(window.location.search).has('reel') ? <ReelMode /> : <Dashboard />);
