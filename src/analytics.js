@@ -313,7 +313,8 @@ export function weeklyReports(days, today) {
 export function estimateBurn(profile, weight, avgKcal, avgSteps, gymShare = 0) {
   if (!profile || !profile.sex || !profile.ageYears || !profile.heightCm || weight == null || avgKcal == null) return null;
   const bmr = 10 * weight + 6.25 * profile.heightCm - 5 * profile.ageYears + (profile.sex === 'male' ? 5 : -161);
-  const tdee = bmr * 1.2 + (avgSteps || 0) * 0.045 * (weight / 70) + gymShare * 300;
+  // 1.2 x BMR already covers everyday movement, so only steps beyond ~3,000 add calories (about 0.04 kcal per step at 70 kg, scaled by body weight)
+  const tdee = bmr * 1.2 + Math.max(0, (avgSteps || 0) - 3000) * 0.04 * (weight / 70) + gymShare * 300;
   const deficit = tdee - avgKcal;
   return { bmr: Math.round(bmr), tdee: Math.round(tdee), deficit: Math.round(deficit), weeklyKg: +((deficit * 7) / 7700).toFixed(2) };
 }

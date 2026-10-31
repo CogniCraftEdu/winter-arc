@@ -168,3 +168,30 @@ export function ShareButton({ data, className = '' }) {
   };
   return <span className={`sharewrap ${className}`}><button className="play" onClick={go} disabled={busy}><span aria-hidden="true">⤓</span><b>{busy ? 'Making…' : 'Share progress card'}</b></button>{msg && <em role="status">{msg}</em>}</span>;
 }
+
+export function Dumbbell({ className = '', size = 44 }) {
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} className={`db ${className}`} aria-hidden="true">
+      <g className="db-bar"><rect x="17" y="29" width="30" height="6" rx="3" /></g>
+      <g className="db-l"><rect x="11" y="19" width="7" height="26" rx="2.5" /><rect x="5" y="24" width="6" height="16" rx="2" /></g>
+      <g className="db-r"><rect x="46" y="19" width="7" height="26" rx="2.5" /><rect x="53" y="24" width="6" height="16" rx="2" /></g>
+    </svg>
+  );
+}
+
+// "Fat -> Fit": the whole journey as one bar from the starting weight to the goal weight, with a dumbbell marking where I am.
+export function FatToFitTrack({ start, current, goal, perWeek, trend, today }) {
+  if (start == null || current == null || !goal || start <= goal) return null;
+  const pct = Math.max(0, Math.min(100, ((start - current) / (start - goal)) * 100));
+  const togo = Math.max(0, current - goal);
+  const eta = (perKg) => { const d = new Date(`${today}T00:00:00`); d.setDate(d.getDate() + Math.ceil((togo / perKg) * 7)); return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); };
+  const pace = trend && trend.perWeek < -0.05 ? -trend.perWeek : null;
+  return (
+    <section className="track rv" style={{ '--p': `${pct}%` }} aria-label={`${pct.toFixed(0)}% of the way from ${start} kg to ${goal} kg`}>
+      <div className="track-top"><b>Fat <i>→</i> Fit</b><span>{pct.toFixed(1)}% of the way · {togo.toFixed(1)} kg to go</span></div>
+      <div className="track-bar"><div className="track-fill" /><div className="track-marker"><Dumbbell size={34} /><em>{current.toFixed(1)}</em></div></div>
+      <div className="track-ends"><span>{start.toFixed(1)} kg<small>start</small></span><span>{goal} kg<small>goal</small></span></div>
+      <p className="track-eta">{perWeek ? `At −${perWeek} kg a week: about ${eta(perWeek)}.` : ''}{pace ? ` At my recent pace (−${pace.toFixed(2)} kg a week): about ${eta(pace)}.` : ''}</p>
+    </section>
+  );
+}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { EXPERIMENTS, HANDLE, IG_URL, MUSCLES, POSITIONING, PROFILE, SHEET_COPY_URL, TARGETS } from './config.js';
 import { addDays, buildFrame, fmtDate, fromKey, todayKey } from './lib.js';
 import { aggregates, buildDays, estimateBurn, experimentResult, highlights, insights, milestones, overview, perfectStreaks, sheetChecks, weekCompare, weeklyChange, weeklyReports } from './analytics.js';
-import { BurnCard, ExperimentCard, InsightsCard, KaizenCard, RulesStrip, SheetCheck, ShareButton, ThemeToggle, TodayRing, VlogGallery, WeekCompareCard, WeeklyReports } from './components/Protocol.jsx';
+import { BurnCard, Dumbbell, FatToFitTrack, ExperimentCard, InsightsCard, KaizenCard, RulesStrip, SheetCheck, ShareButton, ThemeToggle, TodayRing, VlogGallery, WeekCompareCard, WeeklyReports } from './components/Protocol.jsx';
 import { journalFromCsv } from './sheet.js';
 import BodyMap from './components/BodyMap.jsx';
 import ConsistencyFrame from './components/ConsistencyFrame.jsx';
@@ -67,13 +67,14 @@ function Intro() {
   useEffect(() => {
     if (!on) return undefined;
     try { sessionStorage.setItem('f2f:intro', '1'); } catch { /* ignore */ }
-    const a = setTimeout(() => setLeaving(true), 2300); const b = setTimeout(() => setOn(false), 3100);
+    const a = setTimeout(() => setLeaving(true), 3000); const b = setTimeout(() => setOn(false), 3800);
     return () => { clearTimeout(a); clearTimeout(b); };
   }, [on]);
   if (!on) return null;
   return (
     <div className={`intro ${leaving ? 'out' : ''}`} onClick={() => { setLeaving(true); setTimeout(() => setOn(false), 700); }} role="presentation">
       <div className="intro-in">
+        <Dumbbell size={84} className="intro-db" />
         <span className="i1" lang="ja">改善</span>
         <span className="i2">Kaizen</span>
         <span className="i3">1% better, every single day</span>
@@ -84,9 +85,9 @@ function Intro() {
 }
 
 // Counts up to its value when it first appears, and glides to the new value when the sheet changes.
-export function Num({ v, d = 0, sign = false, loc = false, delay = 0 }) {
-  const [shown, setShown] = useState(() => (reduced() ? v : 0));
-  const from = useRef(reduced() ? v : 0);
+export function Num({ v, d = 0, sign = false, loc = false, delay = 0, from: origin = 0 }) {
+  const [shown, setShown] = useState(() => (reduced() ? v : origin));
+  const from = useRef(reduced() ? v : origin);
   useEffect(() => {
     if (reduced()) { setShown(v); return undefined; }
     let raf; let t0 = null; const start = from.current; const ms = 1100;
@@ -199,6 +200,8 @@ export default function Dashboard() {
   const t = journal.target;
   const [range, setRange] = useState(30);
   const [sel, setSel] = useState(null);
+  const [fullOpen, setFullOpen] = useState(() => { try { return new URLSearchParams(window.location.search).has('full'); } catch { return false; } });
+  const [tab, setTab] = useState('days');
   const [story, setStory] = useState(null); // { i, paused } while the highlight reel plays
   const [, tick] = useState(0);
   useEffect(() => { const id = setInterval(() => tick((x) => x + 1), 30000); return () => clearInterval(id); }, []);
@@ -218,6 +221,9 @@ export default function Dashboard() {
   const selKey = sel && days.some((d) => d.k === sel) ? sel : (lastLogged || days[days.length - 1])?.k;
   const selDay = days.find((d) => d.k === selKey);
   const selIdx = days.findIndex((d) => d.k === selKey);
+  const openFull = (name = 'days') => { setTab(name); setFullOpen(true); setTimeout(() => document.getElementById('full')?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }), 80); };
+  const closeFull = () => { setFullOpen(false); window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' }); };
+  const openDay = (k) => { setStory(null); setSel(k); openFull('days'); };
   const hl = useMemo(() => highlights(days, journal, today), [days, journal, today]);
   const ins = useMemo(() => insights(days, t), [days, t]);
   const wc = useMemo(() => weekCompare(days, today), [days, today]);
@@ -289,6 +295,7 @@ export default function Dashboard() {
       <Intro />
       <header className="hero">
         <ThemeToggle />
+        <Dumbbell size={40} className="hero-db" />
         <a className="handle" href={IG_URL} target="_blank" rel="noopener noreferrer">{HANDLE}</a>
         <h1>Weight Loss Journal</h1>
         <p className="kaizen"><span lang="ja">改善</span> Kaizen · 1% better, every single day</p>
@@ -305,26 +312,52 @@ export default function Dashboard() {
       <RulesStrip t={t} positioning={POSITIONING} />
       {days.length > 0 && <TodayRing day={todayDay} today={today} />}
 
-      {days.length > 0 && <div className="strip-wrap"><DayStrip days={days} selected={selKey} today={today} onSelect={(k) => { setStory(null); setSel(k); }} playing={!!story} onPlay={() => (story ? setStory(null) : startStory())} canPlay={days.length > 0} /></div>}
+      {days.length > 0 && <div className="strip-wrap"><DayStrip days={days} selected={selKey} today={today} onSelect={openDay} playing={!!story} onPlay={() => (story ? setStory(null) : startStory())} canPlay={days.length > 0} /></div>}
 
       {!days.length ? (
         <Card><p className="dim">{sheet.status === 'loading' ? 'Loading the journal…' : 'No entries yet. Once the first day is added to the sheet, everything appears here automatically.'}</p></Card>
       ) : (
         <main>
+          <section className="snap">
+            <FatToFitTrack start={ov?.start} current={ov?.current} goal={t.goalWeight} perWeek={t.perWeek} trend={ov?.trend} today={today} />
           <div className="kpis">
-            <Kpi k="Weight now" big={ov ? <Num v={ov.current} d={1} delay={600} /> : '–'} unit="kg" note={ov ? `${short(ov.currentDate)} · started ${ov.start.toFixed(1)}` : 'First weigh-in coming'} />
+            <Kpi k="Weight now" big={ov ? <Num v={ov.current} d={1} delay={600} from={ov.start} /> : '–'} unit="kg" note={ov ? `${short(ov.currentDate)} · started ${ov.start.toFixed(1)}` : 'First weigh-in coming'} />
             <Kpi k="Lost so far" big={ov ? <Num v={-ov.lost} d={1} sign delay={700} /> : '–'} unit="kg" tone={ov && ov.lost > 0 ? 'good' : ''} note={ov ? `${ov.pctOfStart}% of starting weight` : ''} />
             <Kpi k="Weekly trend" big={ov?.trend ? <Num v={ov.trend.perWeek} d={2} sign delay={800} /> : '–'} unit="kg/wk" tone={trendTone} note={ov?.trend ? `Target −${t.perWeek} · 14-day trend` : 'Needs two weeks of weigh-ins'} />
             <Kpi k="Perfect days" big={<Num v={agAll.perfect} delay={900} />} unit={`of ${agAll.tracked}`} note={`Streak ${streak.cur} · best ${streak.best}`} />
             <Kpi k="Avg sleep" big={a7.sleep.avg ?? '–'} unit={a7.sleep.avg != null ? 'h' : ''} tone={a7.sleep.avg != null && a7.sleep.avg >= t.sleep ? 'good' : a7.sleep.avg != null ? 'warn' : ''} note={a7.sleep.avg != null ? `Last 7 days · target ${t.sleep} h` : 'Not tracked yet · add Sleep (hrs) in the sheet'} />
             <Kpi k="Steps" big={agAll.steps.avg != null ? <Num v={agAll.steps.avg} loc delay={1000} /> : '–'} unit="/ day" note={`${agAll.steps.total.toLocaleString('en-IN')} total · goal ${t.steps.toLocaleString('en-IN')}`} />
           </div>
-
+            <div className="grid">
+              <div className="c7"><Card title="Weight · last 30 days" sub={ov ? `${ov.status === 'on pace' ? 'On target pace' : `${Math.abs(ov.diff).toFixed(2)} kg ${ov.status} of the −${t.perWeek} kg/week line`}` : 'Needs a first weigh-in'}>
+                <XYChart xs={days.slice(-30).map((d) => ({ k: d.k, label: short(d.k), full: fmtDate(d.k, { weekday: 'short', day: 'numeric', month: 'short' }) }))} label="Weight, last 30 days" fmt={(v) => v.toFixed(1)} height={210} onPick={openDay}
+                  lines={[{ name: 'Weight', values: days.slice(-30).map((d) => d.w), color: 'var(--c1)', dots: true }, { name: `Target −${t.perWeek} kg/week`, values: days.slice(-30).map((d) => d.target), color: 'var(--muted)', dash: true }]}
+                  tip={(i) => { const d = days.slice(-30)[i]; return [d.w != null && { name: 'Weight', text: `${d.w.toFixed(1)} kg`, color: 'var(--c1)' }, d.target != null && { name: 'Target', text: `${d.target.toFixed(1)} kg` }].filter(Boolean); }} />
+              </Card></div>
+              <div className="c5 stack"><ExperimentCard results={experiments} />
+                {ms.next[0] && <Card title="Next milestone" sub="The closest badge to earn"><ul className="nextlist">{ms.next.slice(0, 3).map((n) => <li key={n.cat}><span>{n.title}</span><i><u style={{ width: `${Math.min(100, (n.have / n.n) * 100)}%` }} /></i><em>{n.cat === 'steps' ? `${Math.round(n.have / 1000)}k / ${n.n / 1000}k` : `${n.have} / ${n.n}`}</em></li>)}</ul></Card>}
+              </div>
+            </div>
+            <div className="snapcta">
+              <button className="bigbtn" onClick={() => (fullOpen ? closeFull() : openFull('days'))}><Dumbbell size={26} /><span>{fullOpen ? 'Hide the full data' : 'See all the data'}</span><i aria-hidden="true">{fullOpen ? '↑' : '↓'}</i></button>
+              <button className="bigbtn ghost" onClick={startStory}><span aria-hidden="true">▶</span><span>Play my journey</span></button>
+            </div>
+          </section>
+          {fullOpen && (
+            <section className="full" id="full">
+              <div className="tabs" role="tablist" aria-label="Full data">
+                <button role="tab" aria-selected={tab === 'days'} className={tab === 'days' ? 'on' : ''} onClick={() => setTab('days')}>Days</button>
+                <button role="tab" aria-selected={tab === 'trends'} className={tab === 'trends' ? 'on' : ''} onClick={() => setTab('trends')}>Trends</button>
+                <button role="tab" aria-selected={tab === 'journey'} className={tab === 'journey' ? 'on' : ''} onClick={() => setTab('journey')}>Journey</button>
+                <button role="tab" aria-selected={tab === 'journal'} className={tab === 'journal' ? 'on' : ''} onClick={() => setTab('journal')}>Vlogs & journal</button>
+                <button className="tabs-x" onClick={closeFull} aria-label="Hide the full data">Hide ↑</button>
+              </div>
+              <div className="tabbody" key={tab}>
+                {tab === 'days' && (<>
           <div className="grid">
             <div className="c7"><KaizenCard days={days} view={view} xs={xs} t={t} onPick={setSel} selected={selKey} /></div>
             <div className="c5 stack"><ExperimentCard results={experiments} /><WeekCompareCard wc={wc} /></div>
           </div>
-
           <div className="grid">
             {selDay && <div className="c5" key={selDay.k}><DayPanel d={selDay} t={t} prevW={prevW} today={today} dayNo={selIdx + 1} /></div>}
             <div className="c7 stack">
@@ -343,40 +376,8 @@ export default function Dashboard() {
               </Card>
             </div>
           </div>
-
-          <div className="grid">
-            <div className="c7"><InsightsCard ins={ins} /></div>
-            <div className="c5 stack">{burn && <BurnCard est={burn.est} avgKcal={burn.avgKcal} avgSteps={burn.avgSteps} target={t.perWeek} />}<WeeklyReports reports={reports.slice(0, 6)} /></div>
-          </div>
-
-          {hl.length > 2 && (
-            <Card className="hlcard" title="Key moments" sub="The days that mattered, found automatically from the sheet. Tap one to open that day, or play the whole journey as a short story."
-              right={<button className="play solid" onClick={startStory}><span aria-hidden="true">▶</span><b>Play my journey</b></button>}>
-              <ul className="hl">{hl.map((e, i) => (
-                <li key={e.id}><button className={`hl-item ${e.tone}`} onClick={() => { setStory(null); setSel(e.date); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-                  <span className="hl-k">{e.kind} · {short(e.date)}</span><b>{e.title}</b><em>{e.detail}</em></button></li>))}</ul>
-            </Card>
-          )}
-
-          <div className="grid">
-            <div className="c5"><Card title="Before & after" sub={ov ? `Since ${fmtDate(ov.startDate, { day: 'numeric', month: 'long' })}` : 'Needs a first weigh-in'}>
-              {ov ? (
-                <>
-                  <div className="ba"><div><span className="k">Start</span><b>{ov.start.toFixed(1)}<small> kg</small></b></div><i aria-hidden="true">→</i><div><span className="k">Now</span><b>{ov.current.toFixed(1)}<small> kg</small></b></div><div className="lost"><span className="k">Change</span><b>{sgn(-ov.lost)}<small> kg</small></b></div></div>
-                  {t.goalWeight ? (() => { const pct = Math.max(0, Math.min(100, ((ov.start - ov.current) / (ov.start - t.goalWeight)) * 100)); return (<><div className="goalbar" role="img" aria-label={`${Math.round(pct)}% of the way to ${t.goalWeight} kg`}><u style={{ width: `${pct}%` }} /></div><p className="rule">{Math.round(pct)}% of the way to {t.goalWeight} kg · {(ov.current - t.goalWeight).toFixed(1)} kg to go{ov.trend && ov.trend.perWeek < 0 ? ` · about ${Math.ceil((ov.current - t.goalWeight) / -ov.trend.perWeek)} weeks at this pace` : ''}</p></>); })() : ov.in4weeks != null && <p className="rule">At the current 14-day trend: about {ov.in4weeks} kg in four weeks.</p>}
-                </>
-              ) : <p className="dim">Appears after the first weigh-in.</p>}
-            </Card></div>
-            <div className="c7"><Card title="Milestones" sub={`${ms.earned.length} earned · each with the day it was reached`}>
-              {ms.earned.length ? <ul className="badges">{ms.earned.slice(0, 8).map((e) => <li key={`${e.cat}${e.n}`}><b>{e.title}</b><span>{fmtDate(e.date, { day: 'numeric', month: 'short' })}</span></li>)}</ul> : <p className="dim">The first badge lands soon.</p>}
-              <h3 className="nexth">Up next</h3>
-              <ul className="nextlist">{ms.next.map((n) => <li key={n.cat}><span>{n.title}</span><i><u style={{ width: `${Math.min(100, (n.have / n.n) * 100)}%` }} /></i><em>{n.cat === 'steps' ? `${Math.round(n.have / 1000)}k / ${n.n / 1000}k` : `${n.have} / ${n.n}`}</em></li>)}</ul>
-            </Card></div>
-          </div>
-
-          {frame && <Card title="Consistency" sub="Every square is a day. The darker, the more of the four daily goals were met."><div className="framewrap"><ConsistencyFrame frame={frame} caption="perfect days" maxLabel={4} compact hideLeft /></div>
-            <p className="rule">Perfect day = {t.steps.toLocaleString('en-IN')} steps + evening gym + calories under {t.kcal} + vlog posted. A planned rest day waives the steps goal and gym.</p></Card>}
-
+                </>)}
+                {tab === 'trends' && (<>
           <Card title={`Daily habits · ${rangeLabel.toLowerCase()}`} sub={`Share of ${ag.tracked} logged days where each goal was met`}>
             <div className="rings">
               <Ring pct={ag.hit.steps} label="Steps" sub={`${t.steps / 1000}k a day`} />
@@ -386,7 +387,6 @@ export default function Dashboard() {
               <Ring pct={ag.hit.sleep} label="Sleep" sub={ag.hit.sleep == null ? 'not tracked yet' : `${t.sleep} h+`} />
             </div>
           </Card>
-
           <div className="grid">
             <div className="c6"><Card title="Sleep" sub={`Hours per night · ${rangeLabel.toLowerCase()}${ag.sleep.avg != null ? ` · average ${ag.sleep.avg} h` : ''}`}>
               <XYChart xs={xs} label="Hours of sleep per night" fmt={(v) => v} height={220} onPick={setSel} selected={selKey} empty="Sleep isn’t tracked yet. Add Sleep (hrs) in the daily sheet and this chart fills in."
@@ -406,7 +406,6 @@ export default function Dashboard() {
                 { name: '2 or fewer', value: ag.outcome.low, color: 'var(--warn)' }, { name: 'Rest days', value: ag.outcome.rest, color: 'var(--faint)' }]} />
             </Card></div>
           </div>
-
           <div className="grid">
             <div className="c6"><Card title="Calories" sub={`${rangeLabel}${ag.calories.avg != null ? ` · average ${ag.calories.avg} kcal` : ''}${ag.calories.overDays ? ` · ${ag.calories.overDays} day${ag.calories.overDays === 1 ? '' : 's'} over` : ''}`}>
               <XYChart xs={xs} label="Calories per day" height={220} fmt={(v) => v} onPick={setSel} selected={selKey}
@@ -424,7 +423,6 @@ export default function Dashboard() {
               <HBars items={MUSCLES.map((m) => ({ name: m.label, value: ag.parts[m.id] || 0 })).sort((a, b) => b.value - a.value)} />
             </Card></div>
           </div>
-
           <div className="grid">
             <div className="c6"><Card title="Steps" sub={`Per day · average ${ag.steps.avg != null ? ag.steps.avg.toLocaleString('en-IN') : '–'}${ag.steps.best ? ` · best ${ag.steps.best.toLocaleString('en-IN')}` : ''}`}>
               <XYChart xs={xs} label="Steps per day" height={210} fmt={(v) => (v >= 1000 ? `${v / 1000}k` : v)} onPick={setSel} selected={selKey}
@@ -439,10 +437,41 @@ export default function Dashboard() {
                 tip={(i) => [{ name: 'Total', text: wkSteps[i].total.toLocaleString('en-IN') }, { name: 'Days logged', text: String(wkSteps[i].n) }]} />
             </Card></div>
           </div>
-
+                </>)}
+                {tab === 'journey' && (<>
+          <div className="grid">
+            <div className="c7"><InsightsCard ins={ins} /></div>
+            <div className="c5 stack">{burn && <BurnCard est={burn.est} avgKcal={burn.avgKcal} avgSteps={burn.avgSteps} target={t.perWeek} />}<WeeklyReports reports={reports.slice(0, 6)} /></div>
+          </div>
+          {hl.length > 2 && (
+            <Card className="hlcard" title="Key moments" sub="The days that mattered, found automatically from the sheet. Tap one to open that day, or play the whole journey as a short story."
+              right={<button className="play solid" onClick={startStory}><span aria-hidden="true">▶</span><b>Play my journey</b></button>}>
+              <ul className="hl">{hl.map((e, i) => (
+                <li key={e.id}><button className={`hl-item ${e.tone}`} onClick={() => openDay(e.date)}>
+                  <span className="hl-k">{e.kind} · {short(e.date)}</span><b>{e.title}</b><em>{e.detail}</em></button></li>))}</ul>
+            </Card>
+          )}
+          <div className="grid">
+            <div className="c5"><Card title="Before & after" sub={ov ? `Since ${fmtDate(ov.startDate, { day: 'numeric', month: 'long' })}` : 'Needs a first weigh-in'}>
+              {ov ? (
+                <>
+                  <div className="ba"><div><span className="k">Start</span><b>{ov.start.toFixed(1)}<small> kg</small></b></div><i aria-hidden="true">→</i><div><span className="k">Now</span><b>{ov.current.toFixed(1)}<small> kg</small></b></div><div className="lost"><span className="k">Change</span><b>{sgn(-ov.lost)}<small> kg</small></b></div></div>
+                  {t.goalWeight ? (() => { const pct = Math.max(0, Math.min(100, ((ov.start - ov.current) / (ov.start - t.goalWeight)) * 100)); return (<><div className="goalbar" role="img" aria-label={`${Math.round(pct)}% of the way to ${t.goalWeight} kg`}><u style={{ width: `${pct}%` }} /></div><p className="rule">{Math.round(pct)}% of the way to {t.goalWeight} kg · {(ov.current - t.goalWeight).toFixed(1)} kg to go{ov.trend && ov.trend.perWeek < 0 ? ` · about ${Math.ceil((ov.current - t.goalWeight) / -ov.trend.perWeek)} weeks at this pace` : ''}</p></>); })() : ov.in4weeks != null && <p className="rule">At the current 14-day trend: about {ov.in4weeks} kg in four weeks.</p>}
+                </>
+              ) : <p className="dim">Appears after the first weigh-in.</p>}
+            </Card></div>
+            <div className="c7"><Card title="Milestones" sub={`${ms.earned.length} earned · each with the day it was reached`}>
+              {ms.earned.length ? <ul className="badges">{ms.earned.slice(0, 8).map((e) => <li key={`${e.cat}${e.n}`}><b>{e.title}</b><span>{fmtDate(e.date, { day: 'numeric', month: 'short' })}</span></li>)}</ul> : <p className="dim">The first badge lands soon.</p>}
+              <h3 className="nexth">Up next</h3>
+              <ul className="nextlist">{ms.next.map((n) => <li key={n.cat}><span>{n.title}</span><i><u style={{ width: `${Math.min(100, (n.have / n.n) * 100)}%` }} /></i><em>{n.cat === 'steps' ? `${Math.round(n.have / 1000)}k / ${n.n / 1000}k` : `${n.have} / ${n.n}`}</em></li>)}</ul>
+            </Card></div>
+          </div>
+          {frame && <Card title="Consistency" sub="Every square is a day. The darker, the more of the four daily goals were met."><div className="framewrap"><ConsistencyFrame frame={frame} caption="perfect days" maxLabel={4} compact hideLeft /></div>
+            <p className="rule">Perfect day = {t.steps.toLocaleString('en-IN')} steps + evening gym + calories under {t.kcal} + vlog posted. A planned rest day waives the steps goal and gym.</p></Card>}
+                </>)}
+                {tab === 'journal' && (<>
           {checkMode && <SheetCheck warnings={warnings} />}
           <VlogGallery days={days} handle={HANDLE} />
-
           <div className="grid">
             <div className="c5"><Card title="What I track" sub="Everything below is filled in daily from one sheet">
               <ul className="track">
@@ -467,6 +496,10 @@ export default function Dashboard() {
               </table></div>
             </Card></div>
           </div>
+                </>)}
+              </div>
+            </section>
+          )}
         </main>
       )}
 

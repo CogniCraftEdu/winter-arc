@@ -87,7 +87,7 @@ export const TAGLINE = '21-day challenge · −0.75 kg every week';
 export const TARGETS = {
   perWeek: 0.75, // kg lost per week
   startWeight: null, // kg; leave null to use the first weight in the sheet
-  goalWeight: null, // kg; set a number to show progress towards it on the dashboard
+  goalWeight: 85, // kg; progress towards it is shown on the dashboard
   steps: 10000, // daily steps
   kcal: 2400, // daily calories (at or under)
   protein: 150, // grams
@@ -125,7 +125,7 @@ export const EXPERIMENTS = [
 ];
 
 // Fill these in to switch on the "estimated fat loss" card (calories in vs out). Leave null to keep it hidden.
-export const PROFILE = { sex: null, ageYears: null, heightCm: null }; // sex: 'male' | 'female'
+export const PROFILE = { sex: 'male', ageYears: 24, heightCm: 175.25 }; // sex: 'male' | 'female'
 
 // Lets followers copy your sheet template ("Make a copy"). Works because the sheet is shared as Viewer.
 export const SHEET_COPY_URL = 'https://docs.google.com/spreadsheets/d/1X-PC7_gJUWIUhmjztmm7TO0eWEUe6DIbDDb-ivN7XS8/copy';
