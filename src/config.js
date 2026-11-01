@@ -131,3 +131,6 @@ export const PROFILE = { sex: 'male', ageYears: 24, heightCm: 175.25 }; // sex: 
 export const SHEET_COPY_URL = 'https://docs.google.com/spreadsheets/d/1X-PC7_gJUWIUhmjztmm7TO0eWEUe6DIbDDb-ivN7XS8/copy';
 
 export const POSITIONING = 'Quit the 9–5. Losing 0.75 kg a week in public. Every number verifiable, one experiment a week.';
+
+// Sunday closes the week: a "Week N complete" milestone, a weekly review to share, and a detox day label.
+export const DETOX = { day: 0, label: 'Detox Sunday', note: 'Reset day: clean eating, easy movement, plan the week.' }; // day: 0 = Sunday

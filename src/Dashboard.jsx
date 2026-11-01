@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { EXPERIMENTS, HANDLE, IG_URL, MUSCLES, POSITIONING, PROFILE, SHEET_COPY_URL, TARGETS } from './config.js';
+import { DETOX, EXPERIMENTS, HANDLE, IG_URL, MUSCLES, POSITIONING, PROFILE, SHEET_COPY_URL, TARGETS } from './config.js';
 import { addDays, buildFrame, fmtDate, fromKey, todayKey } from './lib.js';
-import { aggregates, buildDays, estimateBurn, experimentResult, highlights, insights, milestones, overview, perfectStreaks, sheetChecks, weekCompare, weeklyChange, weeklyReports } from './analytics.js';
-import { BurnCard, Dumbbell, FatToFitTrack, ExperimentCard, InsightsCard, KaizenCard, RulesStrip, SheetCheck, ShareButton, ThemeToggle, TodayRing, VlogGallery, WeekCompareCard, WeeklyReports } from './components/Protocol.jsx';
+import { aggregates, buildDays, estimateBurn, experimentResult, highlights, insights, milestones, overview, perfectStreaks, sheetChecks, weekCompare, weekMilestones, weeklyChange, weeklyReports, isSunday } from './analytics.js';
+import { BurnCard, Dumbbell, FatToFitTrack, ExperimentCard, InsightsCard, KaizenCard, RulesStrip, SheetCheck, ShareButton, ThemeToggle, TodayRing, VlogGallery, WeekCompareCard, WeekMilestones, WeeklyReports } from './components/Protocol.jsx';
 import { journalFromCsv } from './sheet.js';
 import BodyMap from './components/BodyMap.jsx';
 import ConsistencyFrame from './components/ConsistencyFrame.jsx';
@@ -143,7 +143,7 @@ function DayStrip({ days, selected, today, onSelect, playing, onPlay, canPlay })
         {days.map((d) => {
           const s = d.st; const lv = !s ? 'none' : s.rest ? 'rest' : s.perfect ? 'perfect' : s.n >= 3 ? 'good' : 'low';
           return (
-            <button key={d.k} className={`chip ${lv}`} aria-current={d.k === selected} onClick={() => onSelect(d.k)} title={s ? (s.rest ? 'Rest day' : `${s.n}/4 done`) : 'Not logged'}>
+            <button key={d.k} className={`chip ${lv} ${fromKey(d.k).getDay() === DETOX.day ? 'detox' : ''}`} aria-current={d.k === selected} onClick={() => onSelect(d.k)} title={`${fromKey(d.k).getDay() === DETOX.day ? `${DETOX.label} · ` : ''}${s ? (s.rest ? 'Rest day' : `${s.n}/4 done`) : 'Not logged'}`}>
               <span>{d.k === today ? 'Today' : fmtDate(d.k, { weekday: 'short' })}</span>
               <b>{fromKey(d.k).getDate()}</b>
               <em>{fmtDate(d.k, { month: 'short' })}</em>
@@ -165,7 +165,7 @@ function DayPanel({ d, t, prevW, today, dayNo }) {
   const head = d.k === today ? 'Today' : fmtDate(d.k, { weekday: 'long' });
   return (
     <Card className="daypanel" reveal={false} title={`Day ${dayNo} · ${head} · ${fmtDate(d.k, { day: 'numeric', month: 'long' })}`}
-      right={s && <span className={`badge ${s.rest ? 'rest' : s.perfect ? 'ok' : s.n >= 3 ? 'warn' : 'bad'}`}>{s.rest ? 'Rest day' : s.perfect ? 'Perfect day · 4/4' : `${s.n}/4 done`}</span>}>
+      right={<span className="badges-r">{fromKey(d.k).getDay() === DETOX.day && <span className="badge rest">{DETOX.label}</span>}{s && <span className={`badge ${s.rest ? 'rest' : s.perfect ? 'ok' : s.n >= 3 ? 'warn' : 'bad'}`}>{s.rest ? 'Rest day' : s.perfect ? 'Perfect day · 4/4' : `${s.n}/4 done`}</span>}</span>}>
       {!row ? <p className="dim">{d.k === today ? 'Nothing logged yet today. This fills in as soon as the sheet is updated.' : 'Nothing was logged for this day.'}</p> : (
         <>
           <div className="dtiles">
@@ -200,8 +200,6 @@ export default function Dashboard() {
   const t = journal.target;
   const [range, setRange] = useState(30);
   const [sel, setSel] = useState(null);
-  const [fullOpen, setFullOpen] = useState(() => { try { return new URLSearchParams(window.location.search).has('full'); } catch { return false; } });
-  const [tab, setTab] = useState('days');
   const [story, setStory] = useState(null); // { i, paused } while the highlight reel plays
   const [, tick] = useState(0);
   useEffect(() => { const id = setInterval(() => tick((x) => x + 1), 30000); return () => clearInterval(id); }, []);
@@ -221,11 +219,11 @@ export default function Dashboard() {
   const selKey = sel && days.some((d) => d.k === sel) ? sel : (lastLogged || days[days.length - 1])?.k;
   const selDay = days.find((d) => d.k === selKey);
   const selIdx = days.findIndex((d) => d.k === selKey);
-  const openFull = (name = 'days') => { setTab(name); setFullOpen(true); setTimeout(() => document.getElementById('full')?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }), 80); };
-  const closeFull = () => { setFullOpen(false); window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' }); };
-  const openDay = (k) => { setStory(null); setSel(k); openFull('days'); };
+  const goTo = (e, id) => { e?.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }); };
+  const openDay = (k) => { setStory(null); setSel(k); setTimeout(() => goTo(null, 'days'), 60); };
   const hl = useMemo(() => highlights(days, journal, today), [days, journal, today]);
   const ins = useMemo(() => insights(days, t), [days, t]);
+  const weekData = useMemo(() => weekMilestones(days, journal, today), [days, journal, today]);
   const wc = useMemo(() => weekCompare(days, today), [days, today]);
   const reports = useMemo(() => weeklyReports(days, today), [days, today]);
   const experiments = useMemo(() => EXPERIMENTS.map((e) => experimentResult(e, days, today, t)), [days, today, t]);
@@ -339,21 +337,22 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="snapcta">
-              <button className="bigbtn" onClick={() => (fullOpen ? closeFull() : openFull('days'))}><Dumbbell size={26} /><span>{fullOpen ? 'Hide the full data' : 'See all the data'}</span><i aria-hidden="true">{fullOpen ? '↑' : '↓'}</i></button>
-              <button className="bigbtn ghost" onClick={startStory}><span aria-hidden="true">▶</span><span>Play my journey</span></button>
+              <button className="bigbtn" onClick={startStory}><Dumbbell size={26} /><span>Play my journey</span><i aria-hidden="true">▶</i></button>
+              {shareData && <ShareButton data={shareData} className="bigshare" />}
             </div>
           </section>
-          {fullOpen && (
-            <section className="full" id="full">
-              <div className="tabs" role="tablist" aria-label="Full data">
-                <button role="tab" aria-selected={tab === 'days'} className={tab === 'days' ? 'on' : ''} onClick={() => setTab('days')}>Days</button>
-                <button role="tab" aria-selected={tab === 'trends'} className={tab === 'trends' ? 'on' : ''} onClick={() => setTab('trends')}>Trends</button>
-                <button role="tab" aria-selected={tab === 'journey'} className={tab === 'journey' ? 'on' : ''} onClick={() => setTab('journey')}>Journey</button>
-                <button role="tab" aria-selected={tab === 'journal'} className={tab === 'journal' ? 'on' : ''} onClick={() => setTab('journal')}>Vlogs & journal</button>
-                <button className="tabs-x" onClick={closeFull} aria-label="Hide the full data">Hide ↑</button>
-              </div>
-              <div className="tabbody" key={tab}>
-                {tab === 'days' && (<>
+          <nav className="jump" aria-label="Jump to a section">
+            <a href="#days" onClick={(e) => goTo(e, 'days')}>Days</a>
+            <a href="#trends" onClick={(e) => goTo(e, 'trends')}>Trends</a>
+            <a href="#journey" onClick={(e) => goTo(e, 'journey')}>Journey</a>
+            <a href="#journal" onClick={(e) => goTo(e, 'journal')}>Vlogs & journal</a>
+            <a href="#weeks" onClick={(e) => goTo(e, 'weeks')}>Weeks</a>
+          </nav>
+
+          <WeekMilestones data={weekData} today={today} handle={HANDLE} goal={t.goalWeight} current={ov?.current} host={window.location.host} detox={DETOX} />
+
+          <section className="band" id="days">
+            <header className="sec"><h2>Days</h2><p>Pick any day, see the weight trend and the Kaizen score.</p></header>
           <div className="grid">
             <div className="c7"><KaizenCard days={days} view={view} xs={xs} t={t} onPick={setSel} selected={selKey} /></div>
             <div className="c5 stack"><ExperimentCard results={experiments} /><WeekCompareCard wc={wc} /></div>
@@ -376,8 +375,10 @@ export default function Dashboard() {
               </Card>
             </div>
           </div>
-                </>)}
-                {tab === 'trends' && (<>
+          </section>
+
+          <section className="band" id="trends">
+            <header className="sec"><h2>Trends</h2><p>Habits, sleep, calories and steps over time.</p></header>
           <Card title={`Daily habits · ${rangeLabel.toLowerCase()}`} sub={`Share of ${ag.tracked} logged days where each goal was met`}>
             <div className="rings">
               <Ring pct={ag.hit.steps} label="Steps" sub={`${t.steps / 1000}k a day`} />
@@ -437,8 +438,10 @@ export default function Dashboard() {
                 tip={(i) => [{ name: 'Total', text: wkSteps[i].total.toLocaleString('en-IN') }, { name: 'Days logged', text: String(wkSteps[i].n) }]} />
             </Card></div>
           </div>
-                </>)}
-                {tab === 'journey' && (<>
+          </section>
+
+          <section className="band" id="journey">
+            <header className="sec"><h2>Journey</h2><p>Patterns, key moments, milestones and consistency.</p></header>
           <div className="grid">
             <div className="c7"><InsightsCard ins={ins} /></div>
             <div className="c5 stack">{burn && <BurnCard est={burn.est} avgKcal={burn.avgKcal} avgSteps={burn.avgSteps} target={t.perWeek} />}<WeeklyReports reports={reports.slice(0, 6)} /></div>
@@ -468,8 +471,10 @@ export default function Dashboard() {
           </div>
           {frame && <Card title="Consistency" sub="Every square is a day. The darker, the more of the four daily goals were met."><div className="framewrap"><ConsistencyFrame frame={frame} caption="perfect days" maxLabel={4} compact hideLeft /></div>
             <p className="rule">Perfect day = {t.steps.toLocaleString('en-IN')} steps + evening gym + calories under {t.kcal} + vlog posted. A planned rest day waives the steps goal and gym.</p></Card>}
-                </>)}
-                {tab === 'journal' && (<>
+          </section>
+
+          <section className="band" id="journal">
+            <header className="sec"><h2>Vlogs & journal</h2><p>Every vlog and every logged day.</p></header>
           {checkMode && <SheetCheck warnings={warnings} />}
           <VlogGallery days={days} handle={HANDLE} />
           <div className="grid">
@@ -496,10 +501,8 @@ export default function Dashboard() {
               </table></div>
             </Card></div>
           </div>
-                </>)}
-              </div>
-            </section>
-          )}
+          </section>
+
         </main>
       )}
 

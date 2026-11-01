@@ -143,6 +143,7 @@ const LADDERS = [
   { cat: 'steps', unit: 'steps walked', steps: [50000, 100000, 250000, 500000, 1000000], title: (n) => `${n.toLocaleString('en-IN')} steps` },
   { cat: 'vlogs', unit: 'vlogs posted', steps: [7, 14, 30, 60, 100], title: (n) => `${n} vlogs posted` },
   { cat: 'days', unit: 'days logged', steps: [7, 14, 30, 60, 100], title: (n) => `${n} days logged` },
+  { cat: 'weeks', unit: 'weeks completed', steps: [1, 2, 3, 4, 6, 8, 12, 16, 26, 52], title: (n) => `Week ${n} complete` },
 ];
 
 export function milestones(days, journal) {
@@ -158,7 +159,10 @@ export function milestones(days, journal) {
     stepsTotal += d.row.steps || 0; mark('steps', stepsTotal, d.k);
     if (d.row.vlog) { vlogs += 1; mark('vlogs', vlogs, d.k); }
   }
-  const have = { weight: Math.max(0, +bestLost.toFixed(2)), streak: best, steps: stepsTotal, vlogs, days: logged };
+  // every Sunday closes a week
+  let weeksDone = 0;
+  for (const d of days) { if (isSunday(d.k)) { weeksDone += 1; mark('weeks', weeksDone, d.k); } }
+  const have = { weight: Math.max(0, +bestLost.toFixed(2)), streak: best, steps: stepsTotal, vlogs, days: logged, weeks: weeksDone };
   const earned = []; const next = [];
   for (const l of LADDERS) {
     for (const n of l.steps) if (reached[l.cat].has(n)) earned.push({ cat: l.cat, n, title: l.title(n), date: reached[l.cat].get(n) });
@@ -352,3 +356,35 @@ export function experimentResult(exp, days, today, t) {
   const a = net(inWin); const b = net(before);
   return { ...exp, status, logged: rows.length, adherent, of: days7, change: a, baseChange: b, better: a != null && b != null ? a < b : null };
 }
+
+// ---------- weekly milestones (every Sunday closes a week) ----------
+
+// Weeks end on Sunday. Week 1 closes on the first Sunday of the journal (it may be a short start week); each later Sunday adds one more.
+// Returns { weeks: [completed, oldest first], current: the week in progress or null }.
+export function weekMilestones(days, journal, today) {
+  const t = journal.target;
+  if (!days.length) return { weeks: [], current: null };
+  const byWeek = new Map();
+  for (const d of days) { const m = mondayOf(d.k); if (!byWeek.has(m)) byWeek.set(m, []); byWeek.get(m).push(d); }
+  const out = []; let prevW = null; let startW = null; let n = 0;
+  const firstW = days.find((d) => d.w != null);
+  const build = (start, ds, no, complete) => {
+    const end = addDays(start, 6); const rows = ds.filter((d) => d.row); const ws = ds.filter((d) => d.w != null);
+    const wEnd = ws.length ? ws[ws.length - 1].w : null; const wStart = prevW ?? (ws.length ? ws[0].w : null);
+    const change = wEnd != null && wStart != null && (prevW != null || ws.length > 1) ? +(wEnd - wStart).toFixed(2) : null;
+    const steps = rows.map((d) => d.row.steps).filter((x) => x > 0);
+    const best = rows.length ? rows.reduce((a, d) => (d.score > a.score ? d : a), rows[0]) : null;
+    const states = Array.from({ length: 7 }, (_, i) => { const k = addDays(start, i); const d = ds.find((x) => x.k === k); const s = d?.st; return { k, state: k < days[0].k ? 'before' : !d ? (k > today ? 'future' : 'none') : !s ? (k > today ? 'future' : 'none') : s.rest ? 'rest' : s.perfect ? 'perfect' : s.n >= 3 ? 'good' : 'low', n: s?.n ?? null }; });
+    const perfect = rows.filter((d) => d.st.perfect).length;
+    let verdict = 'Not enough weigh-ins to judge the week.';
+    if (change != null) verdict = change <= -t.perWeek ? `Hit the −${t.perWeek} kg weekly goal.` : change < 0 ? `Lost weight, ${(change + t.perWeek).toFixed(2)} kg short of the −${t.perWeek} kg goal.` : change === 0 ? 'The scale held steady.' : 'The scale went up this week. One week is noise; the trend is what counts.';
+    return { n: no, start, end, complete, days: rows.length, change, weightStart: wStart, weightEnd: wEnd, perfect, avgSteps: steps.length ? Math.round(mean(steps)) : null, score: rows.length ? Math.round(mean(rows.map((d) => d.score))) : null, best: best ? { k: best.k, score: best.score } : null, states, verdict, startWeight: firstW?.w ?? null };
+  };
+  let current = null;
+  for (const [start, ds] of byWeek) {
+    const end = addDays(start, 6);
+    if (end <= today) { n += 1; const w = build(start, ds, n, true); out.push(w); if (w.weightEnd != null) prevW = w.weightEnd; } else { current = build(start, ds, n + 1, false); }
+  }
+  return { weeks: out, current };
+}
+export const isSunday = (k) => fromKey(k).getDay() === 0;

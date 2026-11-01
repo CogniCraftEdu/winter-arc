@@ -35,3 +35,44 @@ export function drawProgressCard({ day, weight, lost, since, score, streak, goal
   text(url, W / 2, H - 110, 38, 500, '#a1a1aa');
   return new Promise((res) => c.toBlob((b) => res(b), 'image/png'));
 }
+
+// "Week N complete": a Story-sized weekly dashboard to post every Sunday.
+export function drawWeekCard({ w, handle, url, goal, current }) {
+  const W = 1080; const H = 1920;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0b0b0e'); bg.addColorStop(1, '#14141a');
+  x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  const text = (s, px, py, size, weight = 400, color = '#f4f4f5', align = 'center', spacing = 0) => {
+    x.font = `${weight} ${size}px ${FONT}`; x.fillStyle = color; x.textAlign = align; x.textBaseline = 'alphabetic';
+    if ('letterSpacing' in x) x.letterSpacing = `${spacing}px`;
+    x.fillText(s, px, py);
+  };
+  const fmt = (k) => new Date(`${k}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  text('FAT TO FIT · DETOX SUNDAY', W / 2, 140, 30, 600, '#a1a1aa', 'center', 8);
+  text(handle, W / 2, 190, 34, 400, '#71717a');
+  text(`WEEK ${w.n}`, W / 2, 400, 170, 800, '#f4f4f5', 'center', -5);
+  text('COMPLETE', W / 2, 480, 56, 600, '#6ee7b7', 'center', 14);
+  text(`${fmt(w.start)} – ${fmt(w.end)}`, W / 2, 545, 38, 400, '#a1a1aa');
+  if (w.change != null) {
+    text(`${w.change > 0 ? '+' : w.change < 0 ? '−' : ''}${Math.abs(w.change).toFixed(1)} kg`, W / 2, 790, 220, 200, w.change <= 0 ? '#6ee7b7' : '#e5c07b', 'center', -8);
+    if (w.weightStart != null && w.weightEnd != null) text(`${w.weightStart.toFixed(1)}  →  ${w.weightEnd.toFixed(1)} kg`, W / 2, 870, 52, 400, '#f4f4f5');
+  }
+  // seven days
+  const names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const colors = { perfect: '#6ee7b7', good: '#e5c07b', low: '#f87171', rest: '#a5b4fc', none: '#27272a', future: '#18181b', before: '#18181b' };
+  const gx = 110; const gw = (W - 220) / 7;
+  w.states.forEach((st, i) => {
+    const cx = gx + gw * i + gw / 2;
+    x.fillStyle = colors[st.state]; x.beginPath(); x.roundRect?.(cx - 44, 960, 88, 88, 22); if (!x.roundRect) x.rect(cx - 44, 960, 88, 88); x.fill();
+    text(st.state === 'perfect' ? '✓' : st.state === 'rest' ? 'R' : st.n != null ? String(st.n) : '–', cx, 1020, 44, 700, st.state === 'none' || st.state === 'future' || st.state === 'before' ? '#52525b' : '#09090b');
+    text(names[i], cx, 1090, 30, 500, '#a1a1aa');
+  });
+  text(`${w.perfect} of 7 perfect days`, W / 2, 1200, 56, 600);
+  const rows = [['Average steps', w.avgSteps != null ? w.avgSteps.toLocaleString('en-IN') : '–'], ['Kaizen score', w.score != null ? `${w.score} / 100` : '–']];
+  rows.forEach(([k, v], i) => { text(k, 150, 1320 + i * 90, 44, 400, '#a1a1aa', 'left'); text(v, W - 150, 1320 + i * 90, 50, 600, '#f4f4f5', 'right'); });
+  if (goal && current != null) text(`${current.toFixed(1)} kg now · ${(current - goal).toFixed(1)} kg to the ${goal} kg goal`, W / 2, 1560, 38, 400, '#a1a1aa');
+  text(w.verdict, W / 2, 1650, 34, 400, '#71717a');
+  text(url, W / 2, H - 100, 38, 500, '#a1a1aa');
+  return new Promise((res) => c.toBlob((b) => res(b), 'image/png'));
+}

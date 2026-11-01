@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { fmtDate } from '../lib.js';
 import { XYChart } from './charts.jsx';
 import { currentTheme, setTheme } from '../theme.js';
-import { drawProgressCard } from '../shareCard.js';
+import { drawProgressCard, drawWeekCard } from '../shareCard.js';
 
 const short = (k) => fmtDate(k, { day: 'numeric', month: 'short' });
 const n1 = (v, d = 1) => (v == null ? '–' : v.toFixed(d));
@@ -152,21 +152,21 @@ export function ThemeToggle() {
   return <button className="theme" onClick={flip} aria-label={`Switch to ${v === 'dark' ? 'light' : 'dark'} mode`} title="Light / dark">{v === 'dark' ? '☀' : '☾'}</button>;
 }
 
-export function ShareButton({ data, className = '' }) {
+export function ShareButton({ data, className = '', draw = drawProgressCard, label = 'Share progress card', name }) {
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState('');
   const go = async () => {
     setBusy(true); setMsg('');
     try {
-      const blob = await drawProgressCard(data);
+      const blob = await draw(data);
       if (!blob) throw new Error('no image');
-      const file = new File([blob], `fat-to-fit-day-${data.day}.png`, { type: 'image/png' });
+      const file = new File([blob], name || `fat-to-fit-day-${data.day}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: 'Fat to Fit' }); } else {
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); setMsg('Saved to your downloads');
       }
     } catch (e) { if (e?.name !== 'AbortError') setMsg('Could not create the image'); }
     setBusy(false);
   };
-  return <span className={`sharewrap ${className}`}><button className="play" onClick={go} disabled={busy}><span aria-hidden="true">⤓</span><b>{busy ? 'Making…' : 'Share progress card'}</b></button>{msg && <em role="status">{msg}</em>}</span>;
+  return <span className={`sharewrap ${className}`}><button className="play" onClick={go} disabled={busy}><span aria-hidden="true">⤓</span><b>{busy ? 'Making…' : label}</b></button>{msg && <em role="status">{msg}</em>}</span>;
 }
 
 export function Dumbbell({ className = '', size = 44 }) {
@@ -192,6 +192,51 @@ export function FatToFitTrack({ start, current, goal, perWeek, trend, today }) {
       <div className="track-bar"><div className="track-fill" /><div className="track-marker"><Dumbbell size={34} /><em>{current.toFixed(1)}</em></div></div>
       <div className="track-ends"><span>{start.toFixed(1)} kg<small>start</small></span><span>{goal} kg<small>goal</small></span></div>
       <p className="track-eta">{perWeek ? `At −${perWeek} kg a week: about ${eta(perWeek)}.` : ''}{pace ? ` At my recent pace (−${pace.toFixed(2)} kg a week): about ${eta(pace)}.` : ''}</p>
+    </section>
+  );
+}
+
+const STATE_LABEL = { perfect: 'Perfect day', good: '3 of 4 goals', low: '2 or fewer goals', rest: 'Rest day', none: 'Not logged', future: 'Still to come', before: 'Before the journey' };
+const DAY_LETTER = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+function WeekDots({ states }) {
+  return <ul className="wdots" aria-label="The seven days of the week">{states.map((s, i) => <li key={s.k} className={s.state} title={`${fmtDate(s.k, { weekday: 'long', day: 'numeric', month: 'short' })}: ${STATE_LABEL[s.state]}`}><i>{s.state === 'perfect' ? '✓' : s.state === 'rest' ? 'R' : s.n ?? ''}</i><span>{DAY_LETTER[i]}</span></li>)}</ul>;
+}
+
+// One card per finished week (newest first) plus the week in progress. Every Sunday adds one.
+export function WeekMilestones({ data, today, handle, goal, current, host, detox }) {
+  const { weeks, current: cur } = data;
+  if (!weeks.length && !cur) return null;
+  const list = [...weeks].reverse();
+  const isSun = new Date(`${today}T00:00:00`).getDay() === detox.day;
+  const latest = list[0];
+  return (
+    <section className="weeks rv" id="weeks">
+      <header className="sec"><h2>Weekly milestones</h2><p>Every Sunday closes a week. {detox.note}</p></header>
+      {isSun && latest && latest.end === today && (
+        <div className="sunday"><div><b>{detox.label} · Week {latest.n} complete</b><span>{latest.change != null ? `${latest.change > 0 ? '+' : latest.change < 0 ? '−' : ''}${Math.abs(latest.change).toFixed(2)} kg this week · ` : ''}{latest.perfect} of 7 perfect days. Share this week's dashboard on the channel.</span></div>
+          <div className="sunday-ctl"><ShareButton data={{ w: latest, handle, url: host, goal, current }} draw={drawWeekCard} label="Share week card" name={`fat-to-fit-week-${latest.n}.png`} /><a className="play solid" href={`/?week=${latest.n}`} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">▶</span><b>Weekly view</b></a></div></div>
+      )}
+      <div className="wgrid">
+        {cur && (
+          <article className="wk open"><div className="wk-head"><span className="badge rest">In progress</span><b>Week {cur.n}</b><em>{short(cur.start)} – {short(cur.end)}</em></div>
+            <WeekDots states={cur.states} /><p className="rule">{cur.days} day{cur.days === 1 ? '' : 's'} logged so far · {cur.perfect} perfect. It closes on Sunday {short(cur.end)}.</p></article>
+        )}
+        {list.map((w) => (
+          <article key={w.n} className={`wk ${w === latest ? 'newest' : ''}`}>
+            <div className="wk-head"><span className="badge ok">🏁 Week {w.n} complete</span><em>{short(w.start)} – {short(w.end)}</em></div>
+            {w.days ? (
+              <>
+                <div className="wk-big"><b className={w.change != null && w.change <= 0 ? 'good' : ''}>{w.change != null ? sgn(w.change, 1) : '–'}<small> kg</small></b><span>{w.weightStart != null && w.weightEnd != null ? `${n1(w.weightStart)} → ${n1(w.weightEnd)} kg` : ''}</span></div>
+                <WeekDots states={w.states} />
+                <ul className="wk-stats"><li><b>{w.perfect}/7</b>perfect days</li><li><b>{w.avgSteps != null ? w.avgSteps.toLocaleString('en-IN') : '–'}</b>avg steps</li><li><b>{w.score ?? '–'}</b>Kaizen score</li></ul>
+                <p className="wk-verdict">{w.verdict}{w.best ? ` Best day: ${fmtDate(w.best.k, { weekday: 'long' })} (${w.best.score}).` : ''}</p>
+                <div className="wk-ctl"><ShareButton data={{ w, handle, url: host, goal, current }} draw={drawWeekCard} label="Share week card" name={`fat-to-fit-week-${w.n}.png`} /><a className="play" href={`/?week=${w.n}`} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">▶</span><b>Weekly view</b></a></div>
+              </>
+            ) : <p className="dim">No entries this week.</p>}
+          </article>
+        ))}
+      </div>
     </section>
   );
 }

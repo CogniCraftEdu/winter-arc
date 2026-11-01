@@ -8,6 +8,7 @@ The public page is a **Weight Loss Journal** with no day limit: it runs from the
 | `/` | **Public dashboard** (your Instagram bio link). Scrollable day strip, KPIs, weight / weekly-change / sleep / calories / steps charts, macro, sleep and outcome donuts, habit rings, body-part counts, GitHub-style consistency frame, full journal table. Reads the daily sheet every minute. |
 | `/app` | Private day tracker (stopwatch, plan, notes, reel card). Not linked from the public page, not indexed. |
 | `/?reel` | Clean no-scroll phone-shaped view (day, weight, today's four goals) to screen-record as a vlog opening or closing shot. |
+| `/?week` · `/?week=3` | The weekly dashboard as a clean poster (latest finished week, or week N) to screenshot or screen-record on Sunday. |
 | `/?check` | Owner-only sheet check: lists values that look like typos (weight jumps, steps that look like km, missing days). |
 | `/?demo` | Sample data preview (works on `/` and `/?reel`). |
 | `/api/sheet` | Tiny relay that serves your published Google Sheet (CSV) to the public page. |
@@ -65,3 +66,9 @@ npm run sheet     # regenerate public/fat-to-fit-daily-sheet.xlsx from the dates
 - **Share card**: the "Share progress card" button makes a Story-sized PNG. **Copy my system** links to `SHEET_COPY_URL`.
 - **Visit counts**: switch on Analytics in the Vercel project (Analytics tab); the page already sends the events.
 - **Install**: the page has a web manifest and icons, so it can be added to a phone's home screen.
+
+## Weekly rhythm (Detox Sunday)
+- Every **Sunday closes a week**: the dashboard adds a "Week N complete" card (weight change, perfect days, average steps, Kaizen score, a 7-day strip and a verdict) and a "Week N complete" milestone badge. Week 1 closes on the first Sunday of the journal.
+- On Sunday a banner appears with **Share week card** (Story-sized PNG) and **Weekly view** (`/?week=N`, a poster to screen-record).
+- Sundays are labelled **Detox Sunday** (change `DETOX` in `src/config.js`). The label does not change scoring: mark Sunday as a Rest day in the sheet if you want the steps and gym goals waived.
+- The page has no hide/show: the snapshot comes first, everything else follows below, with jump links (Days, Trends, Journey, Vlogs & journal, Weeks).
