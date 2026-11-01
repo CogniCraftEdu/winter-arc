@@ -40,7 +40,7 @@ export function TodayRing({ day, today }) {
   );
 }
 
-export function KaizenCard({ days, view, xs, t, onPick, selected }) {
+export function KaizenCard({ days, view, xs, t, onPick, selected, height = 190 }) {
   const scored = days.filter((d) => d.score != null);
   if (!scored.length) return null;
   const last = scored[scored.length - 1]; const last7 = scored.slice(-7); const avg7 = Math.round(last7.reduce((a, d) => a + d.score, 0) / last7.length);
@@ -50,7 +50,7 @@ export function KaizenCard({ days, view, xs, t, onPick, selected }) {
         <div className="ks-big"><b>{last.score}</b><small>/ 100</small><span>{short(last.k)}</span></div>
         <div className="ks-big sm"><b>{avg7}</b><small>/ 100</small><span>7-day average</span></div>
       </div>
-      <XYChart xs={xs} label="Kaizen score per day" height={190} fmt={(v) => v} onPick={onPick} selected={selected} guide={{ v: 80, name: 'Strong day (80)' }}
+      <XYChart xs={xs} label="Kaizen score per day" height={height} fmt={(v) => v} onPick={onPick} selected={selected} guide={{ v: 80, name: 'Strong day (80)' }}
         lines={[{ name: 'Kaizen score', values: view.map((d) => d.score), color: 'var(--c1)', dots: true }]}
         tip={(i) => [{ name: 'Score', text: view[i].score != null ? `${view[i].score} / 100` : 'not logged' }]} />
     </Panel>
@@ -119,10 +119,10 @@ export function BurnCard({ est, avgKcal, avgSteps, target }) {
 
 export function VlogGallery({ days, handle }) {
   const v = [...days].reverse().filter((d) => d.row?.vlogUrl);
+  if (!v.length) return null;
   return (
     <Panel title="Vlogs" sub="Every day's video, one tap away">
-      {v.length ? <ul className="vlogs">{v.map((d) => <li key={d.k}><a href={d.row.vlogUrl} target="_blank" rel="noopener noreferrer"><span className="hl-k">{fmtDate(d.k, { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>{d.row.workout || (d.st.rest ? 'Rest day' : 'Daily vlog')}</b><em>Watch on Instagram ↗</em></a></li>)}</ul>
-        : <p className="dim">Vlog links show up here once they are added in the sheet (Vlog link column). Until then, watch them on <b>{handle}</b>.</p>}
+      <ul className="vlogs">{v.map((d) => <li key={d.k}><a href={d.row.vlogUrl} target="_blank" rel="noopener noreferrer"><span className="hl-k">{fmtDate(d.k, { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>{d.row.workout || (d.st.rest ? 'Rest day' : 'Daily vlog')}</b><em>Watch on Instagram ↗</em></a></li>)}</ul>
     </Panel>
   );
 }
@@ -204,17 +204,17 @@ function WeekDots({ states }) {
 }
 
 // One card per finished week (newest first) plus the week in progress. Every Sunday adds one.
-export function WeekMilestones({ data, today, handle, goal, current, host, detox }) {
+export function WeekMilestones({ data, today, handle, goal, current, host }) {
   const { weeks, current: cur } = data;
-  if (!weeks.length && !cur) return null;
-  const list = [...weeks].reverse();
-  const isSun = new Date(`${today}T00:00:00`).getDay() === detox.day;
+  if (!weeks.some((w) => w.days > 0) && !cur) return null;
+  const list = [...weeks].reverse().filter((w) => w.days > 0);
+  const isSun = new Date(`${today}T00:00:00`).getDay() === 0; // Sunday
   const latest = list[0];
   return (
     <section className="weeks rv" id="weeks">
-      <header className="sec"><h2>Weekly milestones</h2><p>Every Sunday closes a week. {detox.note}</p></header>
+      <header className="sec"><h2>Weekly milestones</h2><p>Every Sunday closes a week and adds a new milestone.</p></header>
       {isSun && latest && latest.end === today && (
-        <div className="sunday"><div><b>{detox.label} · Week {latest.n} complete</b><span>{latest.change != null ? `${latest.change > 0 ? '+' : latest.change < 0 ? '−' : ''}${Math.abs(latest.change).toFixed(2)} kg this week · ` : ''}{latest.perfect} of 7 perfect days. Share this week's dashboard on the channel.</span></div>
+        <div className="sunday"><div><b>Week {latest.n} complete</b><span>{latest.change != null ? `${latest.change > 0 ? '+' : latest.change < 0 ? '−' : ''}${Math.abs(latest.change).toFixed(2)} kg this week · ` : ''}{latest.perfect} of 7 perfect days. Share this week's dashboard on the channel.</span></div>
           <div className="sunday-ctl"><ShareButton data={{ w: latest, handle, url: host, goal, current }} draw={drawWeekCard} label="Share week card" name={`fat-to-fit-week-${latest.n}.png`} /><a className="play solid" href={`/?week=${latest.n}`} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">▶</span><b>Weekly reel view</b></a></div></div>
       )}
       <div className="wgrid">

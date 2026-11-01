@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { DETOX, EXPERIMENTS, HANDLE, IG_URL, MUSCLES, POSITIONING, PROFILE, SHEET_COPY_URL, TARGETS } from './config.js';
+import { EXPERIMENTS, HANDLE, IG_URL, MUSCLES, POSITIONING, PROFILE, SHEET_COPY_URL, TARGETS } from './config.js';
 import { addDays, buildFrame, fmtDate, fromKey, todayKey } from './lib.js';
 import { aggregates, buildDays, estimateBurn, experimentResult, highlights, insights, milestones, overview, perfectStreaks, sheetChecks, weekCompare, weekMilestones, weeklyChange, weeklyReports, isSunday } from './analytics.js';
 import { BurnCard, Dumbbell, FatToFitTrack, ExperimentCard, InsightsCard, KaizenCard, RulesStrip, SheetCheck, ShareButton, ThemeToggle, TodayRing, VlogGallery, WeekCompareCard, WeekMilestones, WeeklyReports } from './components/Protocol.jsx';
@@ -143,7 +143,7 @@ function DayStrip({ days, selected, today, onSelect, playing, onPlay, canPlay })
         {days.map((d) => {
           const s = d.st; const lv = !s ? 'none' : s.rest ? 'rest' : s.perfect ? 'perfect' : s.n >= 3 ? 'good' : 'low';
           return (
-            <button key={d.k} className={`chip ${lv} ${fromKey(d.k).getDay() === DETOX.day ? 'detox' : ''}`} aria-current={d.k === selected} onClick={() => onSelect(d.k)} title={`${fromKey(d.k).getDay() === DETOX.day ? `${DETOX.label} · ` : ''}${s ? (s.rest ? 'Rest day' : `${s.n}/4 done`) : 'Not logged'}`}>
+            <button key={d.k} className={`chip ${lv}`} aria-current={d.k === selected} onClick={() => onSelect(d.k)} title={s ? (s.rest ? 'Rest day' : `${s.n}/4 done`) : 'Not logged'}>
               <span>{d.k === today ? 'Today' : fmtDate(d.k, { weekday: 'short' })}</span>
               <b>{fromKey(d.k).getDate()}</b>
               <em>{fmtDate(d.k, { month: 'short' })}</em>
@@ -165,7 +165,7 @@ function DayPanel({ d, t, prevW, today, dayNo }) {
   const head = d.k === today ? 'Today' : fmtDate(d.k, { weekday: 'long' });
   return (
     <Card className="daypanel" reveal={false} title={`Day ${dayNo} · ${head} · ${fmtDate(d.k, { day: 'numeric', month: 'long' })}`}
-      right={<span className="badges-r">{fromKey(d.k).getDay() === DETOX.day && <span className="badge rest">{DETOX.label}</span>}{s && <span className={`badge ${s.rest ? 'rest' : s.perfect ? 'ok' : s.n >= 3 ? 'warn' : 'bad'}`}>{s.rest ? 'Rest day' : s.perfect ? 'Perfect day · 4/4' : `${s.n}/4 done`}</span>}</span>}>
+      right={<span className="badges-r">{s && <span className={`badge ${s.rest ? 'rest' : s.perfect ? 'ok' : s.n >= 3 ? 'warn' : 'bad'}`}>{s.rest ? 'Rest day' : s.perfect ? 'Perfect day · 4/4' : `${s.n}/4 done`}</span>}</span>}>
       {!row ? <p className="dim">{d.k === today ? 'Nothing logged yet today. This fills in as soon as the sheet is updated.' : 'Nothing was logged for this day.'}</p> : (
         <>
           <div className="dtiles">
@@ -307,8 +307,7 @@ export default function Dashboard() {
         {!demo && sheet.status === 'unlinked' && <div className="note">The daily sheet isn’t linked yet.</div>}
       </header>
 
-      <RulesStrip t={t} positioning={POSITIONING} />
-      {days.length > 0 && <TodayRing day={todayDay} today={today} />}
+      <div className="topbar"><RulesStrip t={t} positioning={POSITIONING} />{days.length > 0 && <TodayRing day={todayDay} today={today} />}</div>
 
       {days.length > 0 && <div className="strip-wrap"><DayStrip days={days} selected={selKey} today={today} onSelect={openDay} playing={!!story} onPlay={() => (story ? setStory(null) : startStory())} canPlay={days.length > 0} /></div>}
 
@@ -349,13 +348,13 @@ export default function Dashboard() {
             <a href="#weeks" onClick={(e) => goTo(e, 'weeks')}>Weeks</a>
           </nav>
 
-          <WeekMilestones data={weekData} today={today} handle={HANDLE} goal={t.goalWeight} current={ov?.current} host={window.location.host} detox={DETOX} />
+          <WeekMilestones data={weekData} today={today} handle={HANDLE} goal={t.goalWeight} current={ov?.current} host={window.location.host} />
 
           <section className="band" id="days">
             <header className="sec"><h2>Days</h2><p>Pick any day, see the weight trend and the Kaizen score.</p></header>
           <div className="grid">
-            <div className="c7"><KaizenCard days={days} view={view} xs={xs} t={t} onPick={setSel} selected={selKey} /></div>
-            <div className="c5 stack"><ExperimentCard results={experiments} /><WeekCompareCard wc={wc} /></div>
+            <div className={wc ? 'c7' : 'c12'}><KaizenCard days={days} view={view} xs={xs} t={t} onPick={setSel} selected={selKey} height={wc ? 190 : 120} /></div>
+            {wc && <div className="c5"><WeekCompareCard wc={wc} /></div>}
           </div>
           <div className="grid">
             {selDay && <div className="c5" key={selDay.k}><DayPanel d={selDay} t={t} prevW={prevW} today={today} dayNo={selIdx + 1} /></div>}
@@ -389,6 +388,9 @@ export default function Dashboard() {
             </div>
           </Card>
           <div className="grid">
+            {ag.sleep.n === 0 ? (
+              <div className="c9"><Card title="Sleep" sub="Not tracked yet"><p className="dim">Add the <b>Sleep (hrs)</b> column in the daily sheet and the sleep chart, nights-by-hours donut and the Kaizen sleep points switch on by themselves.</p></Card></div>
+            ) : (<>
             <div className="c6"><Card title="Sleep" sub={`Hours per night · ${rangeLabel.toLowerCase()}${ag.sleep.avg != null ? ` · average ${ag.sleep.avg} h` : ''}`}>
               <XYChart xs={xs} label="Hours of sleep per night" fmt={(v) => v} height={220} onPick={setSel} selected={selKey} empty="Sleep isn’t tracked yet. Add Sleep (hrs) in the daily sheet and this chart fills in."
                 bars={[{ name: 'Sleep (h)', values: view.map((d) => d.row?.sleep ?? null), color: 'var(--c1)', colorAt: (i) => (view[i].row?.sleep != null && view[i].row.sleep < t.sleep ? 'color-mix(in srgb, var(--c1) 50%, transparent)' : 'var(--c1)') }]}
@@ -401,6 +403,7 @@ export default function Dashboard() {
                 { name: 'Under 6 h', value: ag.sleep.buckets.under6, color: 'var(--bad)' }, { name: '6–7 h', value: ag.sleep.buckets.s6to7, color: 'var(--warn)' },
                 { name: '7–8 h', value: ag.sleep.buckets.s7to8, color: 'var(--ok)' }, { name: '8 h+', value: ag.sleep.buckets.over8, color: 'var(--c1)' }]} /> : <p className="dim">No sleep logged yet.</p>}
             </Card></div>
+            </>)}
             <div className="c3"><Card title="Day outcomes" sub={`${ag.tracked} logged days`}>
               <Donut label="Days by how many goals were met" center={ag.perfect} sub="perfect days" parts={[
                 { name: 'Perfect (4/4)', value: ag.outcome.perfect, color: 'var(--ok)' }, { name: '3 of 4', value: ag.outcome.three, color: 'var(--c1)' },

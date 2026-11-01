@@ -161,7 +161,7 @@ export function milestones(days, journal) {
   }
   // every Sunday closes a week
   let weeksDone = 0;
-  for (const d of days) { if (isSunday(d.k)) { weeksDone += 1; mark('weeks', weeksDone, d.k); } }
+  for (const d of days) { if (isSunday(d.k) && days.some((x) => x.row && x.k >= addDays(d.k, -6) && x.k <= d.k)) { weeksDone += 1; mark('weeks', weeksDone, d.k); } }
   const have = { weight: Math.max(0, +bestLost.toFixed(2)), streak: best, steps: stepsTotal, vlogs, days: logged, weeks: weeksDone };
   const earned = []; const next = [];
   for (const l of LADDERS) {

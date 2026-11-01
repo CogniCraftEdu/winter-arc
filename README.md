@@ -67,10 +67,9 @@ npm run sheet     # regenerate public/fat-to-fit-daily-sheet.xlsx from the dates
 - **Visit counts**: switch on Analytics in the Vercel project (Analytics tab); the page already sends the events.
 - **Install**: the page has a web manifest and icons, so it can be added to a phone's home screen.
 
-## Weekly rhythm (Detox Sunday)
+## Weekly rhythm
 - Every **Sunday closes a week**: the dashboard adds a "Week N complete" card (weight change, perfect days, average steps, Kaizen score, a 7-day strip and a verdict) and a "Week N complete" milestone badge. Week 1 closes on the first Sunday of the journal.
 - On Sunday a banner appears with **Share week card** (Story-sized PNG) and **Weekly view** (`/?week=N`, a poster to screen-record).
-- Sundays are labelled **Detox Sunday** (change `DETOX` in `src/config.js`). The label does not change scoring: mark Sunday as a Rest day in the sheet if you want the steps and gym goals waived.
 - The page has no hide/show: the snapshot comes first, everything else follows below, with jump links (Days, Trends, Journey, Vlogs & journal, Weeks).
 
 ## Weekly reel

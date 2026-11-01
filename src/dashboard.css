@@ -331,7 +331,7 @@ html.reel-on, html.reel-on body { overflow: hidden; height: 100%; }
 .dx .band { display: grid; gap: 20px; scroll-margin-top: 150px; } .dx .weeks { scroll-margin-top: 150px; }
 .dx .sec { margin-bottom: 2px; } .dx .sec h2 { margin: 0; font: 700 24px var(--sans); letter-spacing: -0.03em; text-transform: none; color: var(--text); } .dx .sec p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
 .dx .snapcta .bigshare .play { padding: 14px 24px; font-size: 15px; background: transparent; color: var(--text); border: 1px solid var(--line-2); }
-.dx .chip.detox { box-shadow: inset 0 -3px 0 var(--accent); } .dx .badges-r { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.dx .badges-r { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .dx .sunday { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid var(--ok); background: color-mix(in srgb, var(--ok) 8%, transparent); border-radius: 16px; padding: 16px 20px; margin: 14px 0; animation: pop .6s ease both; }
 .dx .sunday b { display: block; font: 600 17px var(--sans); } .dx .sunday span { font-size: 13.5px; color: var(--muted); } .dx .sunday-ctl, .dx .wk-ctl { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .dx .wgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-top: 14px; }
@@ -377,3 +377,7 @@ html.wr-on::-webkit-scrollbar { display: none; } html.wr-on { scrollbar-width: n
 @media (prefers-reduced-motion: reduce) { .wr-s > *, .wr-bars i, .wr-db, .wr-scroll { animation: none !important; } html.wr-on { scroll-snap-type: none; } }
 .wr .bm { display: flex; justify-content: center; gap: 26px; margin: 4px 0; } .wr .bm figure { margin: 0; } .wr .bm figcaption { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
 .wr .db { fill: currentColor; overflow: visible; } .wr .bm-base, .wr .bm-off { fill: none; stroke-width: 1.5; }
+
+.dx .c9 { grid-column: span 9; } .dx .c12 { grid-column: span 12; }
+.dx .topbar { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; align-items: stretch; } .dx .topbar .today { align-content: center; }
+@media (max-width: 1100px) { .dx .c9 { grid-column: span 12; } .dx .topbar { grid-template-columns: 1fr; } }

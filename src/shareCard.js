@@ -49,7 +49,7 @@ export function drawWeekCard({ w, handle, url, goal, current }) {
     x.fillText(s, px, py);
   };
   const fmt = (k) => new Date(`${k}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-  text('FAT TO FIT · DETOX SUNDAY', W / 2, 140, 30, 600, '#a1a1aa', 'center', 8);
+  text('FAT TO FIT · WEEKLY REVIEW', W / 2, 140, 30, 600, '#a1a1aa', 'center', 8);
   text(handle, W / 2, 190, 34, 400, '#71717a');
   text(`WEEK ${w.n}`, W / 2, 400, 170, 800, '#f4f4f5', 'center', -5);
   text('COMPLETE', W / 2, 480, 56, 600, '#6ee7b7', 'center', 14);

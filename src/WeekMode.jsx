@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { DETOX, EXPERIMENTS, HANDLE, IG_URL, MUSCLES, TARGETS } from './config.js';
+import { EXPERIMENTS, HANDLE, IG_URL, MUSCLES, TARGETS } from './config.js';
 import { addDays, fmtDate, todayKey } from './lib.js';
 import { buildDays, overview, weekMilestones } from './analytics.js';
 import { EMPTY, Num, demoJournal, useSheet } from './Dashboard.jsx';
@@ -22,7 +22,8 @@ export default function WeekMode() {
   const ov = useMemo(() => overview(days, journal), [days, journal]);
   const data = useMemo(() => weekMilestones(days, journal, today), [days, journal, today]);
   const want = parseInt(q.get('week'), 10);
-  const w = (Number.isFinite(want) ? data.weeks.find((x) => x.n === want) : null) || data.weeks[data.weeks.length - 1] || data.current;
+  const withData = data.weeks.filter((x) => x.days > 0);
+  const w = (Number.isFinite(want) ? data.weeks.find((x) => x.n === want) : null) || withData[withData.length - 1] || data.current;
   const goal = journal.target.goalWeight || TARGETS.goalWeight;
   const t = journal.target;
 
@@ -35,7 +36,7 @@ export default function WeekMode() {
     const bestDay = w.best ? w.detail.find((d) => d.k === w.best.k) : null;
     const nextExp = EXPERIMENTS.find((e) => e.start > w.end) || null;
 
-    secs.push(<section key="cover" className="wr-s cover"><Dumbbell size={64} className="wr-db" /><span className="wr-k">FAT TO FIT · {DETOX.label.toUpperCase()}</span><h1>How was<br />our week?</h1><div className="wr-big sm">Week {w.n}</div><p>{day(w.start)} – {day(w.end)}{w.complete ? '' : ' (so far)'}</p><i className="wr-scroll" aria-hidden="true">scroll ↓</i></section>);
+    secs.push(<section key="cover" className="wr-s cover"><Dumbbell size={64} className="wr-db" /><span className="wr-k">FAT TO FIT · WEEKLY REVIEW</span><h1>How was<br />our week?</h1><div className="wr-big sm">Week {w.n}</div><p>{day(w.start)} – {day(w.end)}{w.complete ? '' : ' (so far)'}</p><i className="wr-scroll" aria-hidden="true">scroll ↓</i></section>);
     if (w.change != null) secs.push(<section key="weight" className="wr-s"><span className="wr-k">The scale</span><div className={`wr-big ${w.change <= 0 ? 'good' : 'warn'}`}><Num v={w.change} d={1} sign delay={200} /><small> kg</small></div>{w.weightStart != null && <p className="wr-line">{w.weightStart.toFixed(1)} → {w.weightEnd.toFixed(1)} kg</p>}<p>{w.verdict}</p>{ov && goal && <p className="wr-dim">{ov.current.toFixed(1)} kg now · {(ov.current - goal).toFixed(1)} kg to the {goal} kg goal</p>}</section>);
     secs.push(<section key="days" className="wr-s"><span className="wr-k">The seven days</span><div className="wr-big sm">{w.perfect} of 7<small> perfect</small></div><ul className="wv-days big">{w.states.map((s, i) => <li key={s.k} className={s.state} style={{ '--i': i }}><b>{s.state === 'perfect' ? '✓' : s.state === 'rest' ? 'R' : s.n ?? '–'}</b><span>{LETTER[i]}</span></li>)}</ul><p className="wr-dim">✓ all four goals · R rest day · number = goals done</p></section>);
     if (trainDays.length || trained.length) secs.push(<section key="train" className="wr-s"><span className="wr-k">Training</span><div className="wr-big sm">{trainDays.length}<small> sessions</small></div>{trained.length > 0 && <BodyMap trained={trained.map((m) => m.id)} />}<ul className="wr-list">{trainDays.map((d) => <li key={d.k}><span>{day(d.k, { weekday: 'short' })}</span><b>{d.row.workout}</b></li>)}</ul></section>);
