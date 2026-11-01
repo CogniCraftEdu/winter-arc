@@ -60,7 +60,7 @@ const known = new Set(MUSCLES.map((m) => m.id));
 export const parseParts = (v) => [...new Set(String(v ?? '').toLowerCase().split(/[,;/|&+]+|\band\b/).map((x) => x.trim()).flatMap((x) => PART_ALIASES[x] || (known.has(x) ? [x] : [])))];
 
 // Column order used when the header row can't be recognised (matches the template).
-const DEFAULT_COLS = { date: 0, rest: 1, w: 2, sleep: 3, steps: 4, gym: 6, workout: 7, parts: 8, kcal: 9, p: 10, c: 11, f: 12, vlog: 13, vlogUrl: 14 };
+const DEFAULT_COLS = { date: 0, rest: 1, w: 2, sleep: 3, steps: 4, notes: 5, gym: 6, workout: 7, parts: 8, kcal: 9, p: 10, c: 11, f: 12, vlog: 13, vlogUrl: 14 };
 
 export function findColumns(header) {
   const h = header.map((x) => String(x ?? '').toLowerCase().replace(/\s+/g, ' ').trim());
@@ -71,6 +71,7 @@ export function findColumns(header) {
     w: find((x) => /weight/.test(x) && !/target/.test(x)),
     sleep: find((x) => /sleep/.test(x)),
     steps: find((x) => /steps?\b/.test(x)),
+    notes: find((x) => /^notes?\b/.test(x)),
     gym: find((x) => /\bgym\b/.test(x) && !/photo/.test(x)),
     workout: find((x) => /workout/.test(x)),
     parts: find((x) => /(body|muscle)/.test(x)),
@@ -107,7 +108,7 @@ export function journalFromRows(rows, targets = TARGETS) {
       w: num(cell('w')), sleep: num(cell('sleep')), steps,
       stepsDone: rest || (steps != null && steps >= targets.steps),
       gymDone: rest || yes(cell('gym')) || workout !== '',
-      workout, trained: parseParts(cell('parts')),
+      workout, note: String(cell('notes') ?? '').trim().slice(0, 160), trained: parseParts(cell('parts')),
       kcal: num(cell('kcal')), p: num(cell('p')), c: num(cell('c')), f: num(cell('f')),
       rest, vlog: yes(cell('vlog')), vlogUrl: IG.test(link) ? link.slice(0, 200) : '',
     };

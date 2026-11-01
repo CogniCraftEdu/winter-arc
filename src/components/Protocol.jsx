@@ -215,7 +215,7 @@ export function WeekMilestones({ data, today, handle, goal, current, host, detox
       <header className="sec"><h2>Weekly milestones</h2><p>Every Sunday closes a week. {detox.note}</p></header>
       {isSun && latest && latest.end === today && (
         <div className="sunday"><div><b>{detox.label} · Week {latest.n} complete</b><span>{latest.change != null ? `${latest.change > 0 ? '+' : latest.change < 0 ? '−' : ''}${Math.abs(latest.change).toFixed(2)} kg this week · ` : ''}{latest.perfect} of 7 perfect days. Share this week's dashboard on the channel.</span></div>
-          <div className="sunday-ctl"><ShareButton data={{ w: latest, handle, url: host, goal, current }} draw={drawWeekCard} label="Share week card" name={`fat-to-fit-week-${latest.n}.png`} /><a className="play solid" href={`/?week=${latest.n}`} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">▶</span><b>Weekly view</b></a></div></div>
+          <div className="sunday-ctl"><ShareButton data={{ w: latest, handle, url: host, goal, current }} draw={drawWeekCard} label="Share week card" name={`fat-to-fit-week-${latest.n}.png`} /><a className="play solid" href={`/?week=${latest.n}`} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">▶</span><b>Weekly reel view</b></a></div></div>
       )}
       <div className="wgrid">
         {cur && (
@@ -231,7 +231,7 @@ export function WeekMilestones({ data, today, handle, goal, current, host, detox
                 <WeekDots states={w.states} />
                 <ul className="wk-stats"><li><b>{w.perfect}/7</b>perfect days</li><li><b>{w.avgSteps != null ? w.avgSteps.toLocaleString('en-IN') : '–'}</b>avg steps</li><li><b>{w.score ?? '–'}</b>Kaizen score</li></ul>
                 <p className="wk-verdict">{w.verdict}{w.best ? ` Best day: ${fmtDate(w.best.k, { weekday: 'long' })} (${w.best.score}).` : ''}</p>
-                <div className="wk-ctl"><ShareButton data={{ w, handle, url: host, goal, current }} draw={drawWeekCard} label="Share week card" name={`fat-to-fit-week-${w.n}.png`} /><a className="play" href={`/?week=${w.n}`} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">▶</span><b>Weekly view</b></a></div>
+                <div className="wk-ctl"><ShareButton data={{ w, handle, url: host, goal, current }} draw={drawWeekCard} label="Share week card" name={`fat-to-fit-week-${w.n}.png`} /><a className="play" href={`/?week=${w.n}`} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">▶</span><b>Weekly reel view</b></a></div>
               </>
             ) : <p className="dim">No entries this week.</p>}
           </article>

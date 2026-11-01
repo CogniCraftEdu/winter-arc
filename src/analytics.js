@@ -378,7 +378,11 @@ export function weekMilestones(days, journal, today) {
     const perfect = rows.filter((d) => d.st.perfect).length;
     let verdict = 'Not enough weigh-ins to judge the week.';
     if (change != null) verdict = change <= -t.perWeek ? `Hit the −${t.perWeek} kg weekly goal.` : change < 0 ? `Lost weight, ${(change + t.perWeek).toFixed(2)} kg short of the −${t.perWeek} kg goal.` : change === 0 ? 'The scale held steady.' : 'The scale went up this week. One week is noise; the trend is what counts.';
-    return { n: no, start, end, complete, days: rows.length, change, weightStart: wStart, weightEnd: wEnd, perfect, avgSteps: steps.length ? Math.round(mean(steps)) : null, score: rows.length ? Math.round(mean(rows.map((d) => d.score))) : null, best: best ? { k: best.k, score: best.score } : null, states, verdict, startWeight: firstW?.w ?? null };
+    const trained = {}; for (const d of rows) for (const m of d.row.trained || []) trained[m] = (trained[m] || 0) + 1;
+    const kc = rows.map((d) => d.row.kcal).filter((x) => x != null); const sl = rows.map((d) => d.row.sleep).filter((x) => x != null);
+    const macro = (k) => { const v = rows.map((d) => d.row[k]).filter((x) => x != null); return v.length ? Math.round(mean(v)) : null; };
+    const detail = Array.from({ length: 7 }, (_, i) => { const k = addDays(start, i); const d = ds.find((x) => x.k === k); return { k, row: d?.row || null, st: d?.st || null, score: d?.score ?? null }; });
+    return { n: no, start, end, complete, detail, trained, avgKcal: kc.length ? Math.round(mean(kc)) : null, avgSleep: sl.length ? +mean(sl).toFixed(1) : null, macros: { p: macro('p'), c: macro('c'), f: macro('f') }, notes: rows.filter((d) => d.row.note).map((d) => ({ k: d.k, note: d.row.note })), days: rows.length, change, weightStart: wStart, weightEnd: wEnd, perfect, avgSteps: steps.length ? Math.round(mean(steps)) : null, score: rows.length ? Math.round(mean(rows.map((d) => d.score))) : null, best: best ? { k: best.k, score: best.score } : null, states, verdict, startWeight: firstW?.w ?? null };
   };
   let current = null;
   for (const [start, ds] of byWeek) {

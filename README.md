@@ -8,7 +8,7 @@ The public page is a **Weight Loss Journal** with no day limit: it runs from the
 | `/` | **Public dashboard** (your Instagram bio link). Scrollable day strip, KPIs, weight / weekly-change / sleep / calories / steps charts, macro, sleep and outcome donuts, habit rings, body-part counts, GitHub-style consistency frame, full journal table. Reads the daily sheet every minute. |
 | `/app` | Private day tracker (stopwatch, plan, notes, reel card). Not linked from the public page, not indexed. |
 | `/?reel` | Clean no-scroll phone-shaped view (day, weight, today's four goals) to screen-record as a vlog opening or closing shot. |
-| `/?week` · `/?week=3` | The weekly dashboard as a clean poster (latest finished week, or week N) to screenshot or screen-record on Sunday. |
+| `/?week` · `/?week=3` | **Weekly reel**: a scroll-through "how was our week" story (one screen per topic) for the latest finished week or week N. Add `&auto` (or `&auto=6` for 6 seconds a screen) and it scrolls by itself so you can screen-record it as a reel. |
 | `/?check` | Owner-only sheet check: lists values that look like typos (weight jumps, steps that look like km, missing days). |
 | `/?demo` | Sample data preview (works on `/` and `/?reel`). |
 | `/api/sheet` | Tiny relay that serves your published Google Sheet (CSV) to the public page. |
@@ -72,3 +72,8 @@ npm run sheet     # regenerate public/fat-to-fit-daily-sheet.xlsx from the dates
 - On Sunday a banner appears with **Share week card** (Story-sized PNG) and **Weekly view** (`/?week=N`, a poster to screen-record).
 - Sundays are labelled **Detox Sunday** (change `DETOX` in `src/config.js`). The label does not change scoring: mark Sunday as a Rest day in the sheet if you want the steps and gym goals waived.
 - The page has no hide/show: the snapshot comes first, everything else follows below, with jump links (Days, Trends, Journey, Vlogs & journal, Weeks).
+
+## Weekly reel
+- Each screen is built from the sheet: the scale, the seven days, training with a body map, steps, food, sleep, best day and notes, next week.
+- **Notes column (F in the sheet)**: one line per day, e.g. `Squat PR, felt strong`. Notes show up on the "What happened" screen. They are public, so keep them to things you are happy to share.
+- Record it: open `/?week=2&auto=5` on your phone, start the screen recorder, let it scroll, then trim and add a voice-over.
